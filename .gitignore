@@ -1,0 +1,4 @@
+iso/out/
+iso/work/
+*.iso
+__pycache__/
