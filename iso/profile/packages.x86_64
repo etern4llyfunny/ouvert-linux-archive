@@ -1,7 +1,7 @@
 alsa-utils
 amd-ucode
-arch-install-scripts
 archinstall
+arch-install-scripts
 b43-fwcutter
 base
 bcachefs-tools
@@ -10,6 +10,7 @@ bolt
 brltty
 broadcom-wl
 btrfs-progs
+cage
 clonezilla
 cloud-init
 cryptsetup
@@ -75,13 +76,14 @@ ndisc6
 nfs-utils
 nilfs-utils
 nmap
+noto-fonts
 ntfs-3g
 nvme-cli
-open-iscsi
-open-vm-tools
 openconnect
+open-iscsi
 openpgp-card-tools
 openssh
+open-vm-tools
 openvpn
 partclone
 parted
@@ -90,7 +92,9 @@ pcsclite
 ppp
 pptpclient
 pv
+pyside6
 qemu-guest-agent
+qt6-wayland
 refind
 reflector
 rsync

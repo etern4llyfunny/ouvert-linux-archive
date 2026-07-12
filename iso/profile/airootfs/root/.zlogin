@@ -4,3 +4,6 @@ if grep -Fqa 'accessibility=' /proc/cmdline &> /dev/null; then
 fi
 
 ~/.automated_script.sh
+if [[ $(tty) == /dev/tty1 ]]; then
+  exec cage -- env QT_QPA_PLATFORM=wayland python /opt/pzhavos-installer/main.py
+fi
