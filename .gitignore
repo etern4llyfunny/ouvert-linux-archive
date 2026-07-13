@@ -2,3 +2,5 @@ iso/out/
 iso/work/
 *.iso
 __pycache__/
+ovmf_vars.fd
+test.qcow2

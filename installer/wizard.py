@@ -1,4 +1,4 @@
-"""Главное окно установщика: шапка, стек страниц, кнопки Назад/Далее."""
+"""Главное окно установщика: шапка, стек страниц, навигация, запуск установки."""
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -8,10 +8,15 @@ from PySide6.QtWidgets import (
     QStackedWidget, QVBoxLayout, QWidget,
 )
 
+from config_gen import write_configs
 from i18n import tr
-from pages import DesktopPage, StubPage, SummaryPage, UserPage, WelcomePage
+from pages import (
+    DesktopPage, DiskPage, ProgressPage, StubPage, SummaryPage, UserPage,
+    WelcomePage,
+)
 
 ASSETS = Path(__file__).resolve().parent / "assets"
+LIVE_MARKER = Path("/run/archiso")
 
 
 class InstallerWindow(QMainWindow):
@@ -21,9 +26,13 @@ class InstallerWindow(QMainWindow):
             "lang": "ru",
             "username": "",
             "password": "",
+            "password2": "",
             "hostname": "pzhavos",
-            "profile": "plasma",
+            "profile": "KDE Plasma",
             "profile_name": "KDE Plasma",
+            "greeter": "plasma-login-manager",
+            "disk": None,
+            "disk_desc": None,
         }
 
         # --- шапка ---
@@ -57,14 +66,19 @@ class InstallerWindow(QMainWindow):
         # --- страницы ---
         welcome = WelcomePage(self.state)
         welcome.lang_changed.connect(self.retranslate_all)
+        self.progress = ProgressPage(self.state)
         self.pages = [
             welcome,
             StubPage(self.state, "network_title", "network_stub"),
-            StubPage(self.state, "disk_title", "disk_stub"),
+            DiskPage(self.state),
             UserPage(self.state),
             DesktopPage(self.state),
             SummaryPage(self.state),
+            self.progress,
         ]
+        self.summary_index = len(self.pages) - 2
+        self.progress_index = len(self.pages) - 1
+
         self.stack = QStackedWidget()
         for p in self.pages:
             self.stack.addWidget(p)
@@ -93,10 +107,37 @@ class InstallerWindow(QMainWindow):
         self.retranslate_all()
 
     # --- логика ---
+    def _validate(self) -> str | None:
+        s = self.state
+        if not s.get("disk"):
+            return tr("err_no_disk")
+        if not s.get("username") or not s.get("password"):
+            return tr("err_user")
+        if s.get("password") != s.get("password2"):
+            return tr("err_pass")
+        return None
+
+    def _start_install(self) -> None:
+        err = self._validate()
+        if err:
+            QMessageBox.warning(self, "PzhavOS", err)
+            return
+        cfg, creds = write_configs(self.state)
+        if not LIVE_MARKER.exists():
+            QMessageBox.information(self, "PzhavOS", tr("not_live"))
+            return
+        self.btn_back.hide()
+        self.btn_next.hide()
+        self.stack.setCurrentIndex(self.progress_index)
+        self.update_nav()
+        self.progress.start_install(cfg, creds)
+
     def go(self, delta: int) -> None:
         i = self.stack.currentIndex()
-        if delta > 0 and i == len(self.pages) - 1:
-            QMessageBox.information(self, "PzhavOS", tr("install_stub"))
+        if i == self.progress_index:
+            return
+        if delta > 0 and i == self.summary_index:
+            self._start_install()
             return
         i = max(0, min(len(self.pages) - 1, i + delta))
         self.stack.setCurrentIndex(i)
@@ -105,9 +146,8 @@ class InstallerWindow(QMainWindow):
 
     def update_nav(self) -> None:
         i = self.stack.currentIndex()
-        last = i == len(self.pages) - 1
         self.btn_back.setEnabled(i > 0)
-        self.btn_next.setText(tr("install") if last else tr("next"))
+        self.btn_next.setText(tr("install") if i == self.summary_index else tr("next"))
         self.btn_back.setText(tr("back"))
         self.step_label.setText(f"{tr('step')} {i + 1} / {len(self.pages)}")
 

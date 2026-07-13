@@ -22,11 +22,10 @@ STRINGS = {
         "en": "Wi-Fi network list (NetworkManager) and connection status will be here.\nEthernet via DHCP connects automatically.",
     },
 
-    "disk_title": {"ru": "Разметка диска", "en": "Disk layout"},
-    "disk_stub": {
-        "ru": "Здесь будет выбор диска и авторазметка через archinstall.",
-        "en": "Disk selection and auto-layout via archinstall will be here.",
-    },
+    "disk_title": {"ru": "Куда ставим систему?", "en": "Where do we install?"},
+    "disk_warn": {"ru": "Выбранный диск будет полностью стёрт!", "en": "The selected disk will be completely erased!"},
+    "refresh": {"ru": "Обновить", "en": "Refresh"},
+    "no_disks": {"ru": "Диски не найдены. Подключи диск и нажми «Обновить».", "en": "No disks found. Attach a disk and press Refresh."},
 
     "user_title": {"ru": "Создание пользователя", "en": "Create your user"},
     "username": {"ru": "Имя пользователя", "en": "Username"},
@@ -41,11 +40,22 @@ STRINGS = {
     "summary_title": {"ru": "Сводка перед установкой", "en": "Summary"},
     "lang_label": {"ru": "Язык", "en": "Language"},
     "desktop_label": {"ru": "Окружение", "en": "Desktop"},
+    "disk_label": {"ru": "Диск", "en": "Disk"},
     "not_set": {"ru": "не задано", "en": "not set"},
-    "install_stub": {
-        "ru": "Установка появится, когда подключим archinstall как библиотеку.",
-        "en": "Installation will work once archinstall is wired in as a library.",
+
+    "err_no_disk": {"ru": "Выбери диск для установки.", "en": "Select a disk to install to."},
+    "err_user": {"ru": "Заполни имя пользователя и пароль.", "en": "Fill in username and password."},
+    "err_pass": {"ru": "Пароли не совпадают.", "en": "Passwords do not match."},
+    "not_live": {
+        "ru": "Установка запускается только с загрузочного ISO.\nКонфиги записаны в /tmp/pzhavos для проверки.",
+        "en": "Installation only runs from the live ISO.\nConfigs written to /tmp/pzhavos for review.",
     },
+
+    "progress_title": {"ru": "Установка", "en": "Installing"},
+    "progress_running": {"ru": "Идёт установка, не выключай компьютер…", "en": "Installing, do not power off…"},
+    "progress_done": {"ru": "Готово! Установка завершена.", "en": "Done! Installation complete."},
+    "progress_fail": {"ru": "Установка завершилась с ошибкой. Лог ниже и в /tmp/pzhavos/install.log", "en": "Installation failed. Log below and in /tmp/pzhavos/install.log"},
+    "reboot": {"ru": "Перезагрузить", "en": "Reboot"},
 }
 
 

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""PzhavOS Installer — точка входа."""
+"""PzhavOS Installer — точка входа.
+
+--live       полноэкранный режим (запуск с ISO)
+--smoke-test автозакрытие через 300 мс (для CI/проверок)
+"""
 import sys
 
 from PySide6.QtCore import QTimer
@@ -15,8 +19,11 @@ def main() -> int:
     apply_theme(app)
 
     win = InstallerWindow()
-    win.resize(920, 640)
-    win.show()
+    if "--live" in sys.argv:
+        win.showFullScreen()
+    else:
+        win.resize(920, 640)
+        win.show()
 
     if "--smoke-test" in sys.argv:
         QTimer.singleShot(300, app.quit)
