@@ -11,8 +11,8 @@ from PySide6.QtWidgets import (
 from config_gen import write_configs
 from i18n import tr
 from pages import (
-    DesktopPage, DiskPage, ProgressPage, StubPage, SummaryPage, UserPage,
-    WelcomePage,
+    DesktopPage, DiskPage, GfxPage, NetworkPage, ProgressPage, ReposPage,
+    SummaryPage, TimezonePage, UserPage, WelcomePage,
 )
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -33,6 +33,11 @@ class InstallerWindow(QMainWindow):
             "greeter": "plasma-login-manager",
             "disk": None,
             "disk_desc": None,
+            "disk_size": 0,
+            "net_ok": False,
+            "timezone": "Europe/Moscow",
+            "gfx": "All open-source",
+            "repos": ["multilib"],
         }
 
         # --- шапка ---
@@ -67,12 +72,16 @@ class InstallerWindow(QMainWindow):
         welcome = WelcomePage(self.state)
         welcome.lang_changed.connect(self.retranslate_all)
         self.progress = ProgressPage(self.state)
+        self.net_page = NetworkPage(self.state)
         self.pages = [
             welcome,
-            StubPage(self.state, "network_title", "network_stub"),
+            self.net_page,
+            TimezonePage(self.state),
             DiskPage(self.state),
             UserPage(self.state),
             DesktopPage(self.state),
+            GfxPage(self.state),
+            ReposPage(self.state),
             SummaryPage(self.state),
             self.progress,
         ]
@@ -135,6 +144,9 @@ class InstallerWindow(QMainWindow):
     def go(self, delta: int) -> None:
         i = self.stack.currentIndex()
         if i == self.progress_index:
+            return
+        if delta > 0 and self.pages[i] is self.net_page and not self.state.get("net_ok"):
+            QMessageBox.warning(self, "PzhavOS", tr("err_no_net"))
             return
         if delta > 0 and i == self.summary_index:
             self._start_install()

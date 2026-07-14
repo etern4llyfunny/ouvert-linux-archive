@@ -64,7 +64,7 @@ def build_config(state: dict) -> dict:
         "archinstall-language": "English",
         "hostname": state.get("hostname") or "pzhavos",
         "kernels": ["linux"],
-        "bootloader_config": {"bootloader": "Grub", "uki": False, "removable": True},
+        "bootloader_config": {"bootloader": "Grub", "uki": False, "removable": False},
         "disk_config": {
             "config_type": "default_layout",
             "device_modifications": [
@@ -81,9 +81,14 @@ def build_config(state: dict) -> dict:
             "sys_lang": "ru_RU" if ru else "en_US",
         },
         "network_config": {"type": "nm"},
-        "audio_config": {"audio": "pipewire"},
+        "app_config": {
+            "audio_config": {"audio": "pipewire"},
+            "bluetooth_config": {"enabled": True},
+            "print_service_config": {"enabled": True},
+        },
+        "mirror_config": {"optional_repositories": state.get("repos") or []},
         "profile_config": {
-            "gfx_driver": "All open-source",
+            "gfx_driver": state.get("gfx") or "All open-source",
             "greeter": state["greeter"],
             "profile": {
                 "main": "Desktop",
@@ -93,7 +98,7 @@ def build_config(state: dict) -> dict:
         },
         "swap": {"enabled": True, "algorithm": "zstd"},
         "ntp": True,
-        "timezone": "Europe/Moscow" if ru else "UTC",
+        "timezone": state.get("timezone") or ("Europe/Moscow" if ru else "UTC"),
         "packages": [],
         "pacman_config": {"color": True, "parallel_downloads": 5},
         "script": "guided",
