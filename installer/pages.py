@@ -559,6 +559,7 @@ class SummaryPage(BasePage):
             (tr("gfx_label"), s.get("gfx") or ns),
             (tr("repos_label"), ", ".join(s.get("repos") or []) or "—"),
             (tr("disk_label"), s.get("disk_desc") or ns),
+            (tr("part_label"), s.get("part_desc") or ns),
         ]
         html = "".join(
             f"<p style='margin:6px 0'><span style='color:#c67573'>{k}:</span> {v}</p>"

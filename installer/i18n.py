@@ -38,9 +38,50 @@ STRINGS = {
     "tz_city": {"ru": "Город", "en": "City"},
 
     "disk_title": {"ru": "Куда ставим систему?", "en": "Where do we install?"},
-    "disk_warn": {"ru": "Выбранный диск будет полностью стёрт!", "en": "The selected disk will be completely erased!"},
+    "disk_warn": {
+        "ru": "Что делать с диском — выберешь на следующем шаге.",
+        "en": "What to do with the disk is decided on the next step.",
+    },
     "refresh": {"ru": "Обновить", "en": "Refresh"},
     "no_disks": {"ru": "Диски не найдены. Подключи диск и нажми «Обновить».", "en": "No disks found. Attach a disk and press Refresh."},
+
+    # --- v4: разметка ---
+    "part_title": {"ru": "Разметка диска", "en": "Disk partitioning"},
+    "part_mode_wipe": {"ru": "Стереть диск", "en": "Erase disk"},
+    "part_mode_manual": {"ru": "Вручную", "en": "Manual"},
+    "part_fs": {"ru": "Файловая система", "en": "Filesystem"},
+    "part_subvols": {
+        "ru": "Сабволюмы btrfs (@, @home, @log, @pkg) — нужны для снапшотов",
+        "en": "Btrfs subvolumes (@, @home, @log, @pkg) — needed for snapshots",
+    },
+    "part_compress": {"ru": "Сжатие zstd", "en": "zstd compression"},
+    "part_sep_home": {"ru": "Отдельный раздел /home", "en": "Separate /home partition"},
+    "part_root_size": {"ru": "Размер корня", "en": "Root size"},
+    "part_luks": {"ru": "Шифровать диск (LUKS)", "en": "Encrypt disk (LUKS)"},
+    "part_luks_pass": {"ru": "Пароль шифрования", "en": "Encryption password"},
+    "part_luks_pass2": {"ru": "Повтор пароля", "en": "Repeat password"},
+    "part_luks_note": {
+        "ru": "Пароль спрашивается при каждой загрузке, ДО входа в систему.\nЗабудешь — данные не восстановить никак.",
+        "en": "The password is asked at every boot, before login.\nIf you forget it, the data is gone for good.",
+    },
+    "part_manual_hint": {
+        "ru": "Разделы создай заранее (gparted). Здесь только назначь точки монтирования.\n«/» обязателен, «/boot» тоже. Без галки «Форматировать» данные раздела сохранятся.",
+        "en": "Create partitions beforehand (gparted). Here you only assign mountpoints.\n“/” is required, “/boot” too. Without “Format”, the partition data is kept.",
+    },
+    "part_no_parts": {
+        "ru": "На диске нет разделов. Создай их в gparted или выбери «Стереть диск».",
+        "en": "No partitions on this disk. Create them in gparted or pick “Erase disk”.",
+    },
+    "part_col_format": {"ru": "Форматировать", "en": "Format"},
+    "part_mount_none": {"ru": "— не трогать", "en": "— leave alone"},
+    "part_wipe_warn": {
+        "ru": "БУДЕТ СТЁРТО ВСЁ на диске",
+        "en": "EVERYTHING will be erased on",
+    },
+    "part_summary": {"ru": "Что будет сделано:", "en": "What will happen:"},
+    "part_will_format": {"ru": "форматировать", "en": "format"},
+    "part_will_keep": {"ru": "сохранить", "en": "keep"},
+    "part_label": {"ru": "Разметка", "en": "Partitioning"},
 
     "user_title": {"ru": "Создание пользователя", "en": "Create your user"},
     "username": {"ru": "Имя пользователя", "en": "Username"},
@@ -80,6 +121,28 @@ STRINGS = {
     "err_no_disk": {"ru": "Выбери диск для установки.", "en": "Select a disk to install to."},
     "err_user": {"ru": "Заполни имя пользователя и пароль.", "en": "Fill in username and password."},
     "err_pass": {"ru": "Пароли не совпадают.", "en": "Passwords do not match."},
+    "err_no_root": {
+        "ru": "Назначь раздел под корень «/» — без него ставить некуда.",
+        "en": "Assign a partition to root “/” — there is nowhere to install otherwise.",
+    },
+    "err_no_boot": {
+        "ru": "Назначь раздел под «/boot» — без него не встанет загрузчик.",
+        "en": "Assign a partition to “/boot” — the bootloader needs it.",
+    },
+    "err_dup_mount": {
+        "ru": "Одна точка монтирования назначена дважды.",
+        "en": "The same mountpoint is assigned twice.",
+    },
+    "err_disk_small": {
+        "ru": "Диск слишком мал: нужно минимум ~10 GiB.",
+        "en": "Disk is too small: about 10 GiB minimum is needed.",
+    },
+    "err_root_size": {
+        "ru": "Корень слишком большой — под /home не остаётся места.",
+        "en": "Root is too large — no space left for /home.",
+    },
+    "err_luks_empty": {"ru": "Введи пароль шифрования.", "en": "Enter the encryption password."},
+    "err_luks_pass": {"ru": "Пароли шифрования не совпадают.", "en": "Encryption passwords do not match."},
     "not_live": {
         "ru": "Установка запускается только с загрузочного ISO.\nКонфиги записаны в /tmp/pzhavos для проверки.",
         "en": "Installation only runs from the live ISO.\nConfigs written to /tmp/pzhavos for review.",

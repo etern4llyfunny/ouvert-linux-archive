@@ -1,4 +1,7 @@
-"""Главное окно установщика: шапка, стек страниц, навигация, запуск установки."""
+"""Главное окно установщика: шапка, стек страниц, навигация, запуск установки.
+
+ВЕРСИЯ: v4 — добавлена страница «Разметка» (11 страниц).
+"""
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -14,6 +17,7 @@ from pages import (
     DesktopPage, DiskPage, GfxPage, NetworkPage, ProgressPage, ReposPage,
     SummaryPage, TimezonePage, UserPage, WelcomePage,
 )
+from partitioning import PartitioningPage
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 LIVE_MARKER = Path("/run/archiso")
@@ -38,6 +42,19 @@ class InstallerWindow(QMainWindow):
             "timezone": "Europe/Moscow",
             "gfx": "All open-source",
             "repos": ["multilib"],
+            # --- v4: разметка ---
+            "part_mode": "wipe",       # wipe | manual
+            "part_desc": "",
+            "fs": "ext4",
+            "btrfs_subvols": True,
+            "btrfs_compress": True,
+            "separate_home": False,
+            "root_size_gib": 40,
+            "luks": False,
+            "luks_password": "",
+            "luks_password2": "",
+            "manual_parts": [],
+            "sector_size": 512,
         }
 
         # --- шапка ---
@@ -78,6 +95,7 @@ class InstallerWindow(QMainWindow):
             self.net_page,
             TimezonePage(self.state),
             DiskPage(self.state),
+            PartitioningPage(self.state),
             UserPage(self.state),
             DesktopPage(self.state),
             GfxPage(self.state),
@@ -116,10 +134,52 @@ class InstallerWindow(QMainWindow):
         self.retranslate_all()
 
     # --- логика ---
+    def _validate_disk(self) -> str | None:
+        """Гейт страницы «Диск»: без диска дальше не пускаем."""
+        if not self.state.get("disk"):
+            return tr("err_no_disk")
+        return None
+
+    def _validate_part(self) -> str | None:
+        """Гейт страницы «Разметка»."""
+        s = self.state
+
+        if s.get("part_mode") == "manual":
+            mps = [p.get("mountpoint") for p in s.get("manual_parts") or [] if p.get("mountpoint")]
+            if "/" not in mps:
+                return tr("err_no_root")
+            # boot_partition ищется по флагу boot + точке монтирования;
+            # без него archinstall не поставит GRUB ни в UEFI, ни в BIOS
+            if "/boot" not in mps:
+                return tr("err_no_boot")
+            if len(mps) != len(set(mps)):
+                return tr("err_dup_mount")
+            return None
+
+        # режим «Стереть диск»
+        from config_gen import ROOT_START_MIB, available_mib, use_separate_home
+
+        avail = available_mib(s)
+        if avail - ROOT_START_MIB < 8 * 1024:
+            return tr("err_disk_small")
+        if use_separate_home(s):
+            root_mib = int(s.get("root_size_gib") or 0) * 1024
+            if avail - ROOT_START_MIB - root_mib < 8 * 1024:
+                return tr("err_root_size")
+        if s.get("luks"):
+            if not s.get("luks_password"):
+                return tr("err_luks_empty")
+            if s.get("luks_password") != s.get("luks_password2"):
+                return tr("err_luks_pass")
+        return None
+
     def _validate(self) -> str | None:
         s = self.state
         if not s.get("disk"):
             return tr("err_no_disk")
+        err = self._validate_part()
+        if err:
+            return err
         if not s.get("username") or not s.get("password"):
             return tr("err_user")
         if s.get("password") != s.get("password2"):
@@ -145,12 +205,22 @@ class InstallerWindow(QMainWindow):
         i = self.stack.currentIndex()
         if i == self.progress_index:
             return
-        if delta > 0 and self.pages[i] is self.net_page and not self.state.get("net_ok"):
-            QMessageBox.warning(self, "PzhavOS", tr("err_no_net"))
-            return
-        if delta > 0 and i == self.summary_index:
-            self._start_install()
-            return
+
+        if delta > 0:
+            page = self.pages[i]
+            if page is self.net_page and not self.state.get("net_ok"):
+                QMessageBox.warning(self, "PzhavOS", tr("err_no_net"))
+                return
+            if isinstance(page, DiskPage) and (err := self._validate_disk()):
+                QMessageBox.warning(self, "PzhavOS", err)
+                return
+            if isinstance(page, PartitioningPage) and (err := self._validate_part()):
+                QMessageBox.warning(self, "PzhavOS", err)
+                return
+            if i == self.summary_index:
+                self._start_install()
+                return
+
         i = max(0, min(len(self.pages) - 1, i + delta))
         self.stack.setCurrentIndex(i)
         self.pages[i].on_enter()

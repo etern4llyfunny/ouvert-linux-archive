@@ -5,3 +5,4 @@ __pycache__/
 ovmf_vars.fd
 test.qcow2
 repo/build/
+*.qcow2
