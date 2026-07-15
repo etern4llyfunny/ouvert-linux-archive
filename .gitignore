@@ -4,3 +4,4 @@ iso/work/
 __pycache__/
 ovmf_vars.fd
 test.qcow2
+repo/build/
