@@ -1,6 +1,6 @@
 """Генерация конфигов для archinstall 4.4 (--config/--creds --silent).
 
-ВЕРСИЯ: v4 (маркер для проверки свежести: grep VERSION config_gen.py)
+ВЕРСИЯ: v5 (маркер для проверки свежести: grep VERSION config_gen.py)
 
 Формат сверен ТОЛЬКО по исходникам archinstall тега 4.4:
   lib/models/device.py   DiskLayoutConfiguration.parse_arg, Size/SectorSize,
@@ -29,7 +29,7 @@ from pathlib import Path
 
 from desktops import CUSTOM_SETTINGS
 
-VERSION = "v4"
+VERSION = "v5"
 
 OUT_DIR = Path("/tmp/pzhavos")
 CONFIG_PATH = OUT_DIR / "user_configuration.json"
@@ -157,6 +157,29 @@ def build_custom_commands(state: dict) -> list[str]:
             "EndSection\n"
             "XKBEOF\n"
         )
+
+    # Чистка секции [pzhavos] из pacman.conf ЦЕЛИ. Блоков там ДВА
+    # (см. комментарий у CUSTOM_REPOS). Каждый — ровно 3 строки:
+    #   [pzhavos] / SigLevel = ... / Server = ...
+    # (repositories_config(), lib/models/mirrors.py). Диапазон /re/,+2
+    # sed применяет к каждому совпадению, так что уйдут оба.
+    # Без этого pacman -Syu у юзера падает: file:///opt/pzhavos-repo
+    # после перезагрузки не существует.
+    # Бонус: пакеты становятся foreign -> paru видит для них обновления
+    # в AUR. Если оставить [pzhavos], paru счёл бы их реповыми и не
+    # обновлял бы никогда.
+    cmds.append(
+        "set -e\n"
+        f"sed -i '/^\\[{REPO_NAME}\\]$/,+2d' /etc/pacman.conf\n"
+    )
+
+    # Flathub. Без || true падение (нет сети) уронило бы всю установку:
+    # run_custom_user_commands не ловит ошибки (installer.py:2141).
+    cmds.append(
+        "flatpak remote-add --if-not-exists flathub "
+        "https://dl.flathub.org/repo/flathub.flatpakrepo || true\n"
+    )
+
     return cmds
 
 
@@ -414,6 +437,71 @@ def build_disk_config(state: dict) -> dict:
     return cfg
 
 
+# ── ЭТАП 2Б: РЕПОЗИТОРИЙ PZHAVOS И ПРЕДУСТАНОВКА ──────────────────────
+#
+# Репозиторий едет в ISO (build.sh кладёт его в airootfs/opt/pzhavos-repo),
+# поэтому в ЖИВОЙ системе он доступен как обычный каталог.
+#
+# Как это работает (проверено по исходникам archinstall 4.4):
+#   guided.py:101  set_mirrors(on_target=False) -> дописывает [pzhavos]
+#                  в pacman.conf ЖИВОЙ системы;
+#   pacman.py:111  pacstrap -C /etc/pacman.conf -> ВСЕГДА конфиг живой
+#                  системы, и для base, и для add_additional_packages,
+#                  значит наши пакеты видны;
+#   installer.py:953 PacmanConfig.persist() -> КОПИРУЕТ живой pacman.conf
+#                  в цель целиком (вместе с [pzhavos]);
+#   guided.py:112  set_mirrors(on_target=True) -> дописывает [pzhavos]
+#                  в цель ВТОРОЙ раз.
+# Итог: в целевом pacman.conf два блока [pzhavos] с путём file:///opt/...,
+# которого после перезагрузки не существует. Поэтому build_custom_commands
+# ОБЯЗАН вычистить секцию — иначе у юзера падает pacman -Syu.
+REPO_NAME = "pzhavos"
+REPO_DIR = "/opt/pzhavos-repo/x86_64"
+REPO_URL = f"file://{REPO_DIR}"
+
+# Пакеты не подписаны -> SigLevel = Never TrustAll.
+# Значения строгие, это энумы SignCheck/SignOption (lib/models/mirrors.py).
+CUSTOM_REPOS = [
+    {
+        "name": REPO_NAME,
+        "url": REPO_URL,
+        "sign_check": "Never",
+        "sign_option": "TrustAll",
+    }
+]
+
+# Предустановка. Из нашего репо приедут и зависимости (python-steam и др.).
+PACKAGES = [
+    # наш репозиторий
+    "ungoogled-chromium-bin",  # conflicts=('chromium') — обычный chromium НЕ добавлять
+    "v2raya",
+    "zapret2",
+    "protonup-qt",
+    "paru",
+    "pzhavmem",
+    # официальные репозитории
+    "kitty",
+    "kate",
+    "fastfetch",
+    "cmatrix",
+    "cava",
+    "git",
+    "flatpak",
+    "ipset",  # optdepends zapret2: нужен для режима iptables
+]
+
+# Требуют multilib. Если юзер снял галку — steam просто не поставится,
+# а установка упала бы целиком на "target not found".
+PACKAGES_MULTILIB = ["steam"]
+
+
+def build_packages(state: dict) -> list[str]:
+    pkgs = list(PACKAGES)
+    if "multilib" in (state.get("repos") or []):
+        pkgs += PACKAGES_MULTILIB
+    return pkgs
+
+
 def build_config(state: dict) -> dict:
     ru = state.get("lang") == "ru"
     profile = state["profile"]
@@ -439,7 +527,10 @@ def build_config(state: dict) -> dict:
             "bluetooth_config": {"enabled": True},
             "print_service_config": {"enabled": True},
         },
-        "mirror_config": {"optional_repositories": state.get("repos") or []},
+        "mirror_config": {
+            "optional_repositories": state.get("repos") or [],
+            "custom_repositories": CUSTOM_REPOS,
+        },
         "profile_config": {
             "gfx_driver": state.get("gfx") or "All open-source",
             "greeter": state["greeter"],
@@ -452,7 +543,7 @@ def build_config(state: dict) -> dict:
         "swap": {"enabled": True, "algorithm": "zstd"},
         "ntp": True,
         "timezone": state.get("timezone") or ("Europe/Moscow" if ru else "UTC"),
-        "packages": [],
+        "packages": build_packages(state),
         "custom_commands": build_custom_commands(state),
         "pacman_config": {"color": True, "parallel_downloads": 5},
         "script": "guided",

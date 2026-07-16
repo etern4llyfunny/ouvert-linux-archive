@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# pzhavmem — случайный мем в терминале, меняется каждые 2-3 секунды.
+# Выход: Ctrl+C
+# Каталог с картинками можно переопределить: PZHAVMEM_DIR=~/my_mems pzhavmem
+
+set -uo pipefail
+
+MEMDIR="${PZHAVMEM_DIR:-/usr/share/pzhavmem}"
+
+if ! command -v chafa >/dev/null 2>&1; then
+    echo "pzhavmem: не найден chafa (pacman -S chafa)" >&2
+    exit 1
+fi
+
+if [[ ! -d "$MEMDIR" ]]; then
+    echo "pzhavmem: каталог $MEMDIR не существует" >&2
+    exit 1
+fi
+
+# Собираем список картинок. Анимированные форматы (gif/webp) сознательно
+# не берём: chafa крутил бы анимацию бесконечно и мем не сменился бы.
+shopt -s nullglob nocaseglob
+mems=("$MEMDIR"/*.png "$MEMDIR"/*.jpg "$MEMDIR"/*.jpeg)
+shopt -u nullglob nocaseglob
+
+if (( ${#mems[@]} == 0 )); then
+    echo "pzhavmem: в $MEMDIR нет картинок (.png/.jpg)" >&2
+    exit 1
+fi
+
+cleanup() {
+    tput cnorm 2>/dev/null   # вернуть курсор
+    tput rmcup 2>/dev/null   # вернуть основной экран терминала
+}
+trap cleanup EXIT
+trap 'exit 0' INT TERM HUP
+trap '' TSTP   # Ctrl+Z глушим: иначе терминал остался бы с мемом и без курсора
+
+tput smcup 2>/dev/null   # альтернативный экран: после выхода терминал как был
+tput civis 2>/dev/null   # спрятать курсор
+
+prev=-1
+while true; do
+    # случайный мем, но не тот же самый два раза подряд
+    if (( ${#mems[@]} > 1 )); then
+        while :; do
+            i=$(( RANDOM % ${#mems[@]} ))
+            (( i != prev )) && break
+        done
+    else
+        i=0
+    fi
+    prev=$i
+
+    # размеры читаем каждый раз — подхватывается ресайз окна
+    cols=$(tput cols)
+    lines=$(tput lines)
+    (( lines > 1 )) && (( lines-- ))   # запас, чтобы не уехало в скролл
+
+    clear
+    chafa --size="${cols}x${lines}" -- "${mems[$i]}"
+
+    sleep $(( RANDOM % 2 + 2 ))   # 2 или 3 секунды
+done

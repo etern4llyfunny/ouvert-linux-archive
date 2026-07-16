@@ -5,7 +5,7 @@ iso_name="pzhavos"
 iso_label="ARCH_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
 iso_publisher="Arch Linux <https://archlinux.org>"
 iso_application="Arch Linux Live/Rescue DVD"
-iso_version="beta-1.4"
+iso_version="beta-2.0"
 install_dir="arch"
 buildmodes=('iso')
 bootmodes=('bios.syslinux'
