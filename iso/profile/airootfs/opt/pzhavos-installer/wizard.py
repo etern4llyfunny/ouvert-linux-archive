@@ -14,10 +14,11 @@ from PySide6.QtWidgets import (
 from config_gen import write_configs
 from i18n import tr
 from pages import (
-    DesktopPage, DiskPage, GfxPage, NetworkPage, ProgressPage, ReposPage,
-    SummaryPage, TimezonePage, UserPage, WelcomePage,
+    DesktopPage, DiskPage, GfxPage, NetworkPage, ProgressPage,
+    SummaryPage, UserPage, WelcomePage,
 )
 from partitioning import PartitioningPage
+from system import AdvancedPage, RegionPage
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 LIVE_MARKER = Path("/run/archiso")
@@ -42,6 +43,8 @@ class InstallerWindow(QMainWindow):
             "timezone": "Europe/Moscow",
             "gfx": "All open-source",
             "repos": ["multilib"],
+            "kb": "us_ru",
+            "kernel": "linux",
             # --- v4: разметка ---
             "part_mode": "wipe",       # wipe | manual
             "part_desc": "",
@@ -93,13 +96,13 @@ class InstallerWindow(QMainWindow):
         self.pages = [
             welcome,
             self.net_page,
-            TimezonePage(self.state),
+            RegionPage(self.state),
             DiskPage(self.state),
             PartitioningPage(self.state),
             UserPage(self.state),
             DesktopPage(self.state),
             GfxPage(self.state),
-            ReposPage(self.state),
+            AdvancedPage(self.state),
             SummaryPage(self.state),
             self.progress,
         ]

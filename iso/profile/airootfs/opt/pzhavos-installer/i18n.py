@@ -34,6 +34,20 @@ STRINGS = {
     "err_no_net": {"ru": "Сначала подключись к интернету — без него установка не пройдёт.", "en": "Connect to the internet first — installation needs it."},
 
     "tz_title": {"ru": "Регион и время", "en": "Region & time"},
+    "region_title": {"ru": "Регион, время и клавиатура", "en": "Region, time & keyboard"},
+    "kb_label": {"ru": "Раскладка", "en": "Keyboard layout"},
+    "kb_us_ru": {"ru": "Русская + английская (Alt+Shift)", "en": "Russian + English (Alt+Shift)"},
+    "kb_us": {"ru": "Только английская (US)", "en": "English only (US)"},
+    "kb_ru": {"ru": "Только русская", "en": "Russian only"},
+    "kb_console": {"ru": "В консоли (TTY)", "en": "In console (TTY)"},
+    "kb_note_us_ru": {
+        "ru": "Переключение Alt+Shift в графике. В консоли остаётся английская —\nчтобы логин и пароль всегда можно было набрать.",
+        "en": "Alt+Shift toggles in the desktop. The console stays English,\nso login and password can always be typed.",
+    },
+    "kb_note_single": {
+        "ru": "Одна раскладка везде: и в графике, и в консоли.",
+        "en": "One layout everywhere: desktop and console.",
+    },
     "tz_region": {"ru": "Регион", "en": "Region"},
     "tz_city": {"ru": "Город", "en": "City"},
 
@@ -82,6 +96,7 @@ STRINGS = {
     "part_will_format": {"ru": "форматировать", "en": "format"},
     "part_will_keep": {"ru": "сохранить", "en": "keep"},
     "part_label": {"ru": "Разметка", "en": "Partitioning"},
+    "part_count": {"ru": "разд.", "en": "part."},
 
     "user_title": {"ru": "Создание пользователя", "en": "Create your user"},
     "username": {"ru": "Имя пользователя", "en": "Username"},
@@ -100,6 +115,17 @@ STRINGS = {
     },
 
     "repo_title": {"ru": "Дополнительные репозитории", "en": "Additional repositories"},
+    "adv_title": {"ru": "Ядро и репозитории", "en": "Kernel & repositories"},
+    "kern_label": {"ru": "Ядро Linux", "en": "Linux kernel"},
+    "kern_linux": {"ru": "linux — обычное, свежее", "en": "linux — regular, latest"},
+    "kern_both": {"ru": "linux + linux-lts — запасное в меню GRUB", "en": "linux + linux-lts — fallback in GRUB menu"},
+    "kern_lts": {"ru": "linux-lts — долгоживущее, для старого железа", "en": "linux-lts — long-term, for older hardware"},
+    "kern_zen": {"ru": "linux-zen — отзывчивее, но капризнее", "en": "linux-zen — snappier, but fussier"},
+    "kern_note": {
+        "ru": "Не уверен — оставь обычное. «linux + linux-lts» даёт второй пункт\nв меню загрузки: если новое ядро сломается, загрузишься со старого.",
+        "en": "Not sure — keep the regular one. “linux + linux-lts” adds a second\nboot menu entry: if the new kernel breaks, boot the old one.",
+    },
+    "kern_pkgs": {"ru": "Пакеты", "en": "Packages"},
     "repo_multilib_note": {
         "ru": "multilib нужен для Steam и 32-битных игр — не выключай без причины.",
         "en": "multilib is required for Steam and 32-bit games — keep it on.",

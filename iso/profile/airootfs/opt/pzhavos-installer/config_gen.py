@@ -56,6 +56,109 @@ DEFAULT_SUBVOLS = [
 
 MOUNTPOINTS = ["/", "/boot", "/home", "swap"]
 
+# В ручном режиме комбо ФС шире: для ESP нужен fat32, но предлагать его
+# под корень бессмысленно.
+MANUAL_FILESYSTEMS = FILESYSTEMS + ["fat32"]
+
+# lsblk называет ФС ПО-СВОЕМУ. Полный список FilesystemType 4.4:
+# btrfs ext2 ext3 ext4 f2fs fat12 fat16 fat32 ntfs xfs linux-swap crypto_LUKS.
+# 'vfat' там НЕТ -> "'vfat' is not a valid FilesystemType" (баг 15).
+VALID_FS = {"btrfs", "ext2", "ext3", "ext4", "f2fs", "fat12", "fat16", "fat32", "ntfs", "xfs"}
+
+
+def map_lsblk_fs(fstype: str, fsver: str = "") -> str:
+    """Имя ФС из lsblk -> имя из FilesystemType. Пустая строка = не пригодно
+       для монтирования как есть (UI тогда заставит форматировать)."""
+    f = (fstype or "").strip().lower()
+    if not f:
+        return ""
+    if f == "vfat":
+        # FAT16 и FAT32 lsblk различает только колонкой FSVER
+        v = (fsver or "").upper()
+        if "16" in v:
+            return "fat16"
+        if "12" in v:
+            return "fat12"
+        return "fat32"
+    if f == "swap":
+        return "linux-swap"
+    if f in VALID_FS:
+        return f
+    # crypto_LUKS, exfat, zfs и прочее: смонтировать как есть не сможем
+    return ""
+
+# Kernel из lib/models/package_types.py 4.4. Других значений нет.
+KERNEL_SETS = {
+    "linux": ["linux"],
+    "linux-lts": ["linux-lts"],
+    "linux+lts": ["linux", "linux-lts"],
+    "linux-zen": ["linux-zen"],
+}
+
+# kb_layout проверяется через verify_keyboard_layout() -> localectl list-keymaps.
+# Невалидное значение = error в логе, раскладка молча не применится.
+# x11: (XkbLayout, XkbOptions) — пишется custom_command'ом, см. build_custom_commands.
+# ВАЖНО: при "us_ru" в vconsole.conf уедет KEYMAP=us — это сознательно:
+# в TTY всегда можно набрать латиницей логин и пароль.
+KB_LAYOUTS = {
+    "us": {"kb_layout": "us", "x11": None},
+    "us_ru": {"kb_layout": "us", "x11": ("us,ru", "grp:alt_shift_toggle")},
+    "ru": {"kb_layout": "ru", "x11": None},
+}
+
+# installer.py set_vconsole(): FONT= пишется в /etc/vconsole.conf; если имя
+# начинается на "ter-", archinstall сам ставит terminus-font.
+# default8x16 НЕ содержит кириллицы -> при sys_lang=ru_RU сообщения в TTY
+# превратятся в мусор. Имена НЕ угадываем: берём первый реально существующий
+# (kbd есть и на ISO, и в цели, набор одинаковый).
+CONSOLE_FONTS_DIR = Path("/usr/share/kbd/consolefonts")
+CYRILLIC_FONTS = ["cyr-sun16", "UniCyr_8x16", "LatKaCyrHeb-16", "LatArCyrHeb-16", "Cyr_a8x16"]
+DEFAULT_FONT = "default8x16"
+
+
+def list_console_fonts() -> list[str]:
+    """Копия логики list_console_fonts() из archinstall/lib/locale/utils.py."""
+    try:
+        return sorted({p.name.split(".")[0] for p in CONSOLE_FONTS_DIR.glob("*.gz")})
+    except Exception:
+        return []
+
+
+def pick_console_font(lang: str) -> str:
+    if lang != "ru":
+        return DEFAULT_FONT
+    have = set(list_console_fonts())
+    for f in CYRILLIC_FONTS:
+        if f in have:
+            return f
+    return DEFAULT_FONT
+
+
+def build_custom_commands(state: dict) -> list[str]:
+    """Шелл-скрипты, выполняемые в чруте ЦЕЛИ после установки
+       (installer.py: arch-chroot -S <target> bash script; guided.py:181).
+       Это bash, а не fish — heredoc здесь легален.
+       archinstall умеет только ОДНУ раскладку (kb_layout), поэтому
+       переключатель us,ru делаем файлом сами.
+    """
+    cmds: list[str] = []
+    kb = KB_LAYOUTS.get(state.get("kb") or "us")
+    if kb and kb["x11"]:
+        layout, opts = kb["x11"]
+        cmds.append(
+            "set -e\n"
+            "mkdir -p /etc/X11/xorg.conf.d\n"
+            "cat > /etc/X11/xorg.conf.d/00-keyboard.conf <<'XKBEOF'\n"
+            'Section "InputClass"\n'
+            '    Identifier "system-keyboard"\n'
+            '    MatchIsKeyboard "on"\n'
+            f'    Option "XkbLayout" "{layout}"\n'
+            f'    Option "XkbOptions" "{opts}"\n'
+            "EndSection\n"
+            "XKBEOF\n"
+        )
+    return cmds
+
 
 def is_uefi() -> bool:
     """UEFI или Legacy BIOS. От этого зависят флаги ESP и таблица разделов."""
@@ -85,7 +188,7 @@ def list_partitions(disk: str) -> list[dict]:
     """
     try:
         out = subprocess.run(
-            ["lsblk", "-J", "-b", "-o", "PATH,SIZE,START,FSTYPE,TYPE,PARTTYPENAME", disk],
+            ["lsblk", "-J", "-b", "-o", "PATH,SIZE,START,FSTYPE,FSVER,TYPE,PARTTYPENAME", disk],
             capture_output=True, text=True, timeout=10,
         ).stdout
         tree = json.loads(out).get("blockdevices", [])
@@ -101,7 +204,8 @@ def list_partitions(disk: str) -> list[dict]:
                     "path": n.get("path"),
                     "size": int(n.get("size") or 0),
                     "start": int(n.get("start") or 0) * 512,
-                    "cur_fs": (n.get("fstype") or "").strip(),
+                    "cur_fs": map_lsblk_fs(n.get("fstype") or "", n.get("fsver") or ""),
+                    "raw_fs": (n.get("fstype") or "").strip(),  # только для показа юзеру
                     "parttype": (n.get("parttypename") or "").strip(),
                     "mountpoint": None,
                     "format": False,
@@ -249,6 +353,9 @@ def _manual_partitions(state: dict) -> list[dict]:
         else:
             fs_type = (p.get("fs") if fmt else p.get("cur_fs")) or "ext4"
             mountpoint = mp
+            # ESP обязан быть FAT32: is_efi() смотрит на флаг, но GRUB читает ФС
+            if mp == "/boot" and uefi and fmt:
+                fs_type = "fat32"
             if mp == "/boot" and uefi:
                 # Иначе снова "Could not detect efi partition" (баг 6)
                 flags = ["boot", "esp"]
@@ -315,15 +422,16 @@ def build_config(state: dict) -> dict:
         "version": "4.4",
         "archinstall-language": "English",
         "hostname": state.get("hostname") or "pzhavos",
-        "kernels": ["linux"],
+        "kernels": KERNEL_SETS.get(state.get("kernel") or "linux", ["linux"]),
         # removable=True — fallback /EFI/BOOT/BOOTX64.EFI. Баг 7: без него
         # система не грузится после сброса NVRAM. В v3 стояло False.
         "bootloader_config": {"bootloader": "Grub", "uki": False, "removable": True},
         "disk_config": build_disk_config(state),
         "locale_config": {
-            "kb_layout": "us",
+            "kb_layout": KB_LAYOUTS.get(state.get("kb") or "us", KB_LAYOUTS["us"])["kb_layout"],
             "sys_enc": "UTF-8",
             "sys_lang": "ru_RU" if ru else "en_US",
+            "console_font": pick_console_font(state.get("lang") or "en"),
         },
         "network_config": {"type": "nm"},
         "app_config": {
@@ -345,6 +453,7 @@ def build_config(state: dict) -> dict:
         "ntp": True,
         "timezone": state.get("timezone") or ("Europe/Moscow" if ru else "UTC"),
         "packages": [],
+        "custom_commands": build_custom_commands(state),
         "pacman_config": {"color": True, "parallel_downloads": 5},
         "script": "guided",
     }

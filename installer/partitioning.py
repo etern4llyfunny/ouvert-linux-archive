@@ -10,8 +10,8 @@ from PySide6.QtWidgets import (
 )
 
 from config_gen import (
-    FILESYSTEMS, MOUNTPOINTS, detect_sector_size, is_uefi, list_partitions,
-    max_root_gib, use_separate_home, use_subvols,
+    FILESYSTEMS, MANUAL_FILESYSTEMS, MOUNTPOINTS, detect_sector_size, is_uefi,
+    list_partitions, max_root_gib, use_separate_home, use_subvols,
 )
 from i18n import tr
 from pages import BasePage
@@ -30,7 +30,7 @@ class ManualRow(QWidget):
         self.on_change = on_change
 
         size_gib = int(part.get("size") or 0) / 2 ** 30
-        cur_fs = part.get("cur_fs") or "—"
+        cur_fs = part.get("raw_fs") or part.get("cur_fs") or "—"
         self.info = QLabel(f'{part["path"]}   {size_gib:.1f} GiB   {cur_fs}')
         self.info.setMinimumWidth(280)
 
@@ -45,7 +45,7 @@ class ManualRow(QWidget):
         self.fmt.toggled.connect(self._changed)
 
         self.fs = QComboBox()
-        self.fs.addItems(FILESYSTEMS)
+        self.fs.addItems(MANUAL_FILESYSTEMS)
         self.fs.setFixedWidth(90)
         self.fs.currentTextChanged.connect(self._changed)
 
@@ -67,6 +67,14 @@ class ManualRow(QWidget):
             self.fmt.setChecked(True)
             self.fmt.setEnabled(False)
             self.fs.setEnabled(False)
+        elif mp == "/boot" and is_uefi():
+            # ESP обязан быть FAT — иначе прошивка его не прочитает
+            self.fs.setCurrentText("fat32")
+            self.fs.setEnabled(False)
+            self.fmt.setEnabled(True)
+            if not self.part.get("cur_fs", "").startswith("fat"):
+                self.fmt.setChecked(True)
+                self.fmt.setEnabled(False)
         else:
             self.fmt.setEnabled(mp is not None)
             # Нечего сохранять, если ФС не распознана — форматирование обязательно
@@ -265,11 +273,12 @@ class PartitioningPage(BasePage):
         # setRowVisible убирает и строку формы; setVisible оставлял бы дыру
         self.form.setRowVisible(self.cb_subvols, btrfs)
         self.form.setRowVisible(self.cb_compress, btrfs)
+        self.form.setRowVisible(self.cb_home, not use_subvols(s))
+        self.form.setRowVisible(self.root_size, use_separate_home(s))
         for w in (self.luks_pass, self.luks_pass2, self.luks_note):
             self.form.setRowVisible(w, s["luks"])
         # При сабволюмах @home заменяет отдельный раздел — так делает archinstall
-        self.cb_home.setEnabled(not use_subvols(s))
-        self.root_size.setEnabled(use_separate_home(s))
+
         self.root_size.setMaximum(max(max_root_gib(s), 15))
 
         self._update_summary()
@@ -317,7 +326,7 @@ class PartitioningPage(BasePage):
         s = self.state
         if s.get("part_mode") == "manual":
             n = len([p for p in s.get("manual_parts") or [] if p.get("mountpoint")])
-            return f'{tr("part_mode_manual")} — {n}'
+            return f'{tr("part_mode_manual")} — {n} {tr("part_count")}'
         parts = [tr("part_mode_wipe"), s.get("fs", "ext4")]
         if use_subvols(s):
             parts.append("subvols")
