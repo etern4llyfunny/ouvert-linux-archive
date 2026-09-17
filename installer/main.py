@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PzhavOS Installer — точка входа.
 
---live       полноэкранный режим (запуск с ISO)
+--live       принимается и игнорируется (Bug 57, патч 57Б)
 --smoke-test автозакрытие через 300 мс (для CI/проверок)
 """
 import sys
@@ -19,11 +19,8 @@ def main() -> int:
     apply_theme(app)
 
     win = InstallerWindow()
-    if "--live" in sys.argv:
-        win.showFullScreen()
-    else:
-        win.resize(920, 640)
-        win.show()
+    win.resize(920, 640)
+    win.show()
 
     if "--smoke-test" in sys.argv:
         QTimer.singleShot(300, app.quit)

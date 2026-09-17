@@ -1,16 +1,16 @@
 """Профили archinstall 4.4: (показ, имя профиля archinstall, greeter)."""
 
 DESKTOP_ENVIRONMENTS = [
-    ("KDE Plasma", "KDE Plasma", "plasma-login-manager"),
-    ("GNOME", "GNOME", "gdm"),
     ("Cinnamon", "Cinnamon", "lightdm-gtk-greeter"),
+    ("GNOME", "GNOME", "gdm"),
     ("XFCE", "Xfce4", "lightdm-gtk-greeter"),
+    ("COSMIC", "Cosmic", "cosmic-greeter"),
+    ("KDE Plasma", "KDE Plasma", "plasma-login-manager"),
     ("MATE", "Mate", "lightdm-gtk-greeter"),
     ("Budgie", "Budgie", "lightdm-slick-greeter"),
     ("LXQt", "Lxqt", "sddm"),
     ("Deepin", "Deepin", "lightdm-gtk-greeter"),
     ("Enlightenment", "Enlightenment", "lightdm-gtk-greeter"),
-    ("COSMIC", "Cosmic", "cosmic-greeter"),
 ]
 
 WINDOW_MANAGERS = [

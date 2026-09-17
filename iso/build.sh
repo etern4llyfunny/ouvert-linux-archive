@@ -4,7 +4,7 @@ cd "$(dirname "$0")"
 
 # 1. Инсталлер
 mkdir -p profile/airootfs/opt
-rsync -a --delete --exclude __pycache__ ../installer/ profile/airootfs/opt/pzhavos-installer/
+rsync -a --delete --exclude __pycache__ --exclude '*.py.*' --exclude tests --exclude 'test_*.py' --exclude 'patch_*.py' --exclude stand_gui.py ../installer/ profile/airootfs/opt/pzhavos-installer/
 
 # 2. Репозиторий pzhavos.
 # В живой системе он окажется как /opt/pzhavos-repo/x86_64 — ровно этот путь

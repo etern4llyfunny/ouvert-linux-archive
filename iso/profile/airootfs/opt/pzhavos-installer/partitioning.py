@@ -19,24 +19,53 @@ from pages import BasePage
 CORAL = "#c67573"
 TEAL = "#5fd3c8"
 MUTED = "#a0a0a0"
+AMBER = "#d9a441"
+
+
+# Bug 32: lsblk отдаёт FAT32 как «vfat», и проверка .startswith("fat")
+# не срабатывала НИКОГДА — установщик принудительно взводил галку
+# «Форматировать» на ESP Windows, как только его назначали на /efi.
+FAT_FS = ("fat", "vfat", "msdos")
+
+
+def _is_fat(fs: str) -> bool:
+    return (fs or "").lower().startswith(FAT_FS)
+
+
+def _human(n: int) -> str:
+    """Дубль diskmap.human, но БЕЗ импорта diskmap на уровне модуля:
+    страница разметки обязана работать, даже если diskmap не уехал в сборку.
+    """
+    if n >= 2 ** 30:
+        return f"{n / 2 ** 30:.1f} ГиБ"
+    if n >= 2 ** 20:
+        return f"{n / 2 ** 20:.0f} МиБ"
+    return f"{n} Б"
 
 
 class ManualRow(QWidget):
     """Строка таблицы ручной разметки: раздел -> точка монтирования + формат."""
 
-    def __init__(self, part: dict, on_change):
+    def __init__(self, part: dict, on_change, protect: str = ""):
         super().__init__()
         self.part = part
         self.on_change = on_change
+        # protect — непустая строка = причина, по которой раздел НЕЛЬЗЯ
+        # форматировать (Bug 31). Монтировать при этом можно: назначить
+        # ESP винды на /efi без форматирования — штатный сценарий дуалбута.
+        self.protect = protect
 
-        size_gib = int(part.get("size") or 0) / 2 ** 30
         cur_fs = part.get("raw_fs") or part.get("cur_fs") or "—"
-        self.info = QLabel(f'{part["path"]}   {size_gib:.1f} GiB   {cur_fs}')
+        # Bug 29: 16-мегабайтный MSR показывался как «0.0 GiB»
+        self.info = QLabel(
+            f'{part["path"]}   {_human(int(part.get("size") or 0))}   {cur_fs}')
         self.info.setMinimumWidth(280)
 
         self.mount = QComboBox()
         self.mount.addItem(tr("part_mount_none"), None)
         for mp in MOUNTPOINTS:
+            if mp == "/efi" and not is_uefi():
+                continue  # /efi осмысленен только на UEFI
             self.mount.addItem(mp, mp)
         self.mount.setFixedWidth(120)
         self.mount.currentIndexChanged.connect(self._changed)
@@ -56,6 +85,31 @@ class ManualRow(QWidget):
         row.addWidget(self.fmt)
         row.addWidget(self.fs)
         row.addStretch()
+        # --- Bug 24 v2: восстановить назначения из part[] ДО _changed().
+        # ПОРЯДОК КРИТИЧЕН: сначала СЧИТАТЬ все три значения, потом ставить
+        # виджеты под blockSignals. Иначе setCurrentIndex испустит сигнал,
+        # дёрнет _changed(), и тот затрёт part[] значениями ещё не
+        # восстановленных комбобоксов (ошибка первой редакции патча). ---
+        _mp = part.get("mountpoint")
+        _fs_saved = part.get("fs")
+        _fmt_saved = bool(part.get("format"))
+        if _mp is not None:
+            _i = self.mount.findData(_mp)
+            if _i >= 0:
+                self.mount.blockSignals(True)
+                self.mount.setCurrentIndex(_i)
+                self.mount.blockSignals(False)
+        if _fs_saved:
+            _i = self.fs.findText(_fs_saved)
+            if _i >= 0:
+                self.fs.blockSignals(True)
+                self.fs.setCurrentIndex(_i)
+                self.fs.blockSignals(False)
+        if _fmt_saved:
+            self.fmt.blockSignals(True)
+            self.fmt.setChecked(True)
+            self.fmt.blockSignals(False)
+        # --- конец Bug 24 v2 ---
         self._changed()
 
     def _changed(self) -> None:
@@ -67,12 +121,14 @@ class ManualRow(QWidget):
             self.fmt.setChecked(True)
             self.fmt.setEnabled(False)
             self.fs.setEnabled(False)
-        elif mp == "/boot" and is_uefi():
-            # ESP обязан быть FAT — иначе прошивка его не прочитает
+        elif mp == "/efi":
+            # Отдельный ESP: FAT32 принудительно. Формат — выбор юзера
+            # (общий с Windows ESP форматировать НЕЛЬЗЯ!), по умолчанию ВЫКЛ.
             self.fs.setCurrentText("fat32")
             self.fs.setEnabled(False)
             self.fmt.setEnabled(True)
-            if not self.part.get("cur_fs", "").startswith("fat"):
+            if not _is_fat(self.part.get("cur_fs", "")):
+                # не-FAT под /efi смысла не имеет -> отформатировать
                 self.fmt.setChecked(True)
                 self.fmt.setEnabled(False)
         else:
@@ -82,6 +138,20 @@ class ManualRow(QWidget):
                 self.fmt.setChecked(True)
                 self.fmt.setEnabled(False)
             self.fs.setEnabled(mp is not None and self.fmt.isChecked())
+
+        # --- Bug 31: чужой раздел форматировать нельзя ни при каких mp.
+        # Стоит ПОСЛЕ всей логики выше: ветки /efi и «ФС не распознана»
+        # сами взводят галку, и снять её должен именно последний ход. ---
+        if self.protect:
+            if self.fmt.isChecked():
+                self.fmt.blockSignals(True)
+                self.fmt.setChecked(False)
+                self.fmt.blockSignals(False)
+            self.fmt.setEnabled(False)
+            self.fs.setEnabled(False)
+            self.fmt.setToolTip(self.protect)
+        else:
+            self.fmt.setToolTip("")
 
         self.part["format"] = self.fmt.isChecked()
         self.part["fs"] = self.fs.currentText()
@@ -211,6 +281,9 @@ class PartitioningPage(BasePage):
         self.refresh_btn.clicked.connect(self._reload_parts)
         top = QHBoxLayout()
         top.addWidget(self.manual_hint, 1)
+        self.edit_btn = QPushButton()
+        self.edit_btn.clicked.connect(self._open_editor)
+        top.addWidget(self.edit_btn)
         top.addWidget(self.refresh_btn)
 
         self.rows_box = QVBoxLayout()
@@ -244,10 +317,41 @@ class PartitioningPage(BasePage):
 
         disk = self.state.get("disk")
         parts = list_partitions(disk) if disk else []
+        # --- Bug 24: сохранить назначения юзера при возврате «Назад» ---
+        # Переносим mountpoint/format/fs со старого списка на свежий по
+        # ключу path. Только если диск ТОТ ЖЕ: иначе назначения устарели.
+        if self.state.get("manual_parts_disk") == disk:
+            _saved = {
+                _p.get("path"): _p
+                for _p in (self.state.get("manual_parts") or [])
+                if _p.get("path")
+            }
+            for _p in parts:
+                _old = _saved.get(_p.get("path"))
+                if not _old:
+                    continue
+                for _k in ("mountpoint", "format", "fs"):
+                    if _k in _old:
+                        _p[_k] = _old[_k]
+        self.state["manual_parts_disk"] = disk
+        # --- конец Bug 24 ---
         self.state["manual_parts"] = parts
         self.no_parts.setVisible(not parts)
+        # --- Bug 31: карта защиты. Читается один раз на диск и кэшируется:
+        # ro-монтирование чужого ESP слишком дорого для каждой перерисовки.
+        # probe_ok=False (нет прав / parted не отработал) НЕ равно «защищать
+        # нечего» — про это честно пишем в предупреждениях. ---
+        self.protect, self.probe_ok = {}, False
+        if disk:
+            try:
+                from partedit import protection_map
+                self.protect, self.probe_ok = protection_map(disk)
+            except Exception:
+                self.protect, self.probe_ok = {}, False
         for p in parts:
-            self.rows_box.addWidget(ManualRow(p, self._update_summary))
+            self.rows_box.addWidget(
+                ManualRow(p, self._update_summary,
+                          self.protect.get(p.get("path"), "")))
         self.rows_box.addStretch()
         self._update_summary()
 
@@ -319,8 +423,41 @@ class PartitioningPage(BasePage):
                 f'<p style="color:{MUTED}">{" · ".join(bits)}</p>'
             )
 
+        for w in self._warnings():
+            html += f'<p style="color:{AMBER}">⚠ {w}</p>'
+
         self.summary.setText(html)
         s["part_desc"] = self._plain_desc()
+
+    def _warnings(self) -> list:
+        """УРОВЕНЬ 2 (ТЗ 5.4): предупреждаем, но «Далее» НЕ блокируем."""
+        s = self.state
+        if s.get("part_mode") != "manual":
+            return []
+        out = []
+        if not getattr(self, "probe_ok", False) and s.get("manual_parts"):
+            out.append(tr("warn_no_probe"))
+        for p in s.get("manual_parts") or []:
+            mp = p.get("mountpoint")
+            if not mp:
+                continue
+            size = int(p.get("size") or 0)
+            if mp == "/" and size < 20 * 2 ** 30:
+                out.append(tr("warn_root_small") % _human(size))
+            if mp == "/boot" and size < 512 * 2 ** 20:
+                out.append(tr("warn_boot_small") % _human(size))
+            # Bug 23: чужой ESP не форматируем, но места на нём может не быть
+            if mp == "/efi" and not p.get("format"):
+                try:
+                    from diskmap import ESP_MIN_FREE
+                    from partedit import esp_free
+                    free = esp_free(p["path"])
+                except Exception:
+                    free = None
+                if free is not None and free < ESP_MIN_FREE:
+                    out.append(tr("warn_esp_full")
+                               % (p["path"], _human(free), _human(ESP_MIN_FREE)))
+        return out
 
     def _plain_desc(self) -> str:
         s = self.state
@@ -335,6 +472,26 @@ class PartitioningPage(BasePage):
         if s.get("luks"):
             parts.append("LUKS")
         return " · ".join(parts)
+
+    def _open_editor(self) -> None:
+        """Модальный редактор разделов (этап 5). В сессии 2 — только чтение.
+
+        Импорты локальные: если partedit.py не уехал в сборку, страница
+        разметки обязана продолжать работать, а не падать на импорте.
+        """
+        from PySide6.QtWidgets import QMessageBox
+        disk = self.state.get("disk")
+        if not disk:
+            QMessageBox.warning(self, tr("part_title"), tr("err_no_disk"))
+            return
+        try:
+            from partedit import PartitionEditor
+        except Exception as exc:
+            QMessageBox.critical(self, tr("part_title"), f"partedit: {exc}")
+            return
+        PartitionEditor(disk, self).exec()
+        # Перечитать разделы: назначения переживут это благодаря Bug 24.
+        self._reload_parts()
 
     def retranslate(self) -> None:
         self.title.setText(tr("part_title"))
@@ -354,4 +511,5 @@ class PartitioningPage(BasePage):
         self.luks_note.setText(tr("part_luks_note"))
         self.manual_hint.setText(tr("part_manual_hint"))
         self.refresh_btn.setText(tr("refresh"))
+        self.edit_btn.setText(tr("part_edit_btn"))
         self.no_parts.setText(tr("part_no_parts"))

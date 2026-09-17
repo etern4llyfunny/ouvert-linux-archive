@@ -5,5 +5,11 @@ fi
 
 ~/.automated_script.sh
 if [[ $(tty) == /dev/tty1 ]]; then
-  exec cage -- env QT_QPA_PLATFORM=wayland python /opt/pzhavos-installer/main.py --live
+  cage -s -- env QT_QPA_PLATFORM=wayland python /opt/pzhavos-installer/main.py --live
+  if [[ $? -ne 0 ]]; then
+    echo ''
+    echo '>>> PzhavOS: GPU renderer failed. Restarting installer in software mode (pixman)...'
+    sleep 3
+    exec env WLR_RENDERER=pixman LIBGL_ALWAYS_SOFTWARE=1 cage -s -- env QT_QPA_PLATFORM=wayland WLR_RENDERER=pixman python /opt/pzhavos-installer/main.py --live
+  fi
 fi

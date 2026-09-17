@@ -79,12 +79,12 @@ STRINGS = {
         "en": "The password is asked at every boot, before login.\nIf you forget it, the data is gone for good.",
     },
     "part_manual_hint": {
-        "ru": "Разделы создай заранее (gparted). Здесь только назначь точки монтирования.\n«/» обязателен, «/boot» тоже. Без галки «Форматировать» данные раздела сохранятся.",
-        "en": "Create partitions beforehand (gparted). Here you only assign mountpoints.\n“/” is required, “/boot” too. Without “Format”, the partition data is kept.",
+        "ru": "Назначь точки монтирования. «/» обязателен, «/boot» тоже.\nБез галки «Форматировать» данные раздела сохранятся. Создать или удалить раздел — кнопка «Изменить разделы…».",
+        "en": "Assign the mountpoints. “/” is required, “/boot” too.\nWithout “Format” the partition data is kept. To add or remove partitions use “Edit partitions…”.",
     },
     "part_no_parts": {
-        "ru": "На диске нет разделов. Создай их в gparted или выбери «Стереть диск».",
-        "en": "No partitions on this disk. Create them in gparted or pick “Erase disk”.",
+        "ru": "На диске нет разделов. Создай их кнопкой «Изменить разделы…» или выбери «Стереть диск».",
+        "en": "No partitions on this disk. Create them with “Edit partitions…” or pick “Erase disk”.",
     },
     "part_col_format": {"ru": "Форматировать", "en": "Format"},
     "part_mount_none": {"ru": "— не трогать", "en": "— leave alone"},
@@ -97,6 +97,162 @@ STRINGS = {
     "part_will_keep": {"ru": "сохранить", "en": "keep"},
     "part_label": {"ru": "Разметка", "en": "Partitioning"},
     "part_count": {"ru": "разд.", "en": "part."},
+
+    # --- этап 5: редактор разделов ---
+    "part_edit_btn": {"ru": "Изменить разделы…", "en": "Edit partitions…"},
+    "pe_title": {"ru": "Разделы диска %s", "en": "Partitions of %s"},
+    "pe_hint": {
+        "ru": "Что уже есть на диске. Красным помечено то, что удалять нельзя:\n"
+              "загрузчик Windows, служебные разделы и разделы восстановления.\n"
+              "Выбери строку — снизу будет написано, что с ней можно сделать.",
+        "en": "What is already on the disk. Red marks what must not be deleted:\n"
+              "the Windows bootloader, service and recovery partitions.\n"
+              "Select a row — the line below tells you what you can do with it.",
+    },
+    "pe_stand": {
+        "ru": "СТЕНД: данные из файла %s, а НЕ с реального диска",
+        "en": "TEST DATA: read from %s, NOT from a real disk",
+    },
+    "pe_col_num": {"ru": "№", "en": "#"},
+    "pe_col_start": {"ru": "Начало", "en": "Start"},
+    "pe_col_size": {"ru": "Размер", "en": "Size"},
+    "pe_col_fs": {"ru": "ФС", "en": "FS"},
+    "pe_col_name": {"ru": "Метка", "en": "Label"},
+    "pe_col_flags": {"ru": "Флаги", "en": "Flags"},
+    "pe_col_what": {"ru": "Что это", "en": "What it is"},
+    "pe_delete": {"ru": "Удалить раздел", "en": "Delete partition"},
+    "pe_create": {"ru": "Создать раздел", "en": "Create partition"},
+    "pe_close": {"ru": "Закрыть", "en": "Close"},
+    "pe_soon": {"ru": "Появится в следующей версии", "en": "Coming in the next version"},
+    "pe_select": {
+        "ru": "Выбери строку — покажу, можно ли её удалить.",
+        "en": "Select a row — I will tell you whether it can be deleted.",
+    },
+    "pe_can_delete": {"ru": "Этот раздел удалить можно.", "en": "This partition can be deleted."},
+    "pe_cant_delete": {"ru": "Удалять нельзя: %s", "en": "Cannot delete: %s"},
+    "pe_mounted": {"ru": "примонтирован: %s", "en": "mounted at: %s"},
+    "pe_no_data": {
+        "ru": "Не удалось прочитать таблицу разделов.\n"
+              "Обычно это нехватка прав: parted требует root.",
+        "en": "Could not read the partition table.\n"
+              "Usually a permissions issue: parted needs root.",
+    },
+
+    # --- сессия 4: запись на диск ---
+    "pe_ro": {"ru": "Изменять разделы нельзя: %s", "en": "Editing is not possible: %s"},
+    # --- сессия 6: Bug 42, диск без таблицы разделов ---
+    "pe_mklabel_btn": {"ru": "Создать таблицу разделов",
+                       "en": "Create partition table"},
+    "pe_nolabel": {
+        "ru": "На диске %s нет таблицы разделов — он совершенно пустой.\n"
+              "Нажми «Создать таблицу разделов», и появится место "
+              "под первый раздел.",
+        "en": "Disk %s has no partition table — it is completely blank.\n"
+              "Press “Create partition table” to get free space "
+              "for the first partition.",
+    },
+    "pe_hint_nolabel": {
+        "ru": "Диск пустой: на нём нет даже таблицы разделов.\n"
+              "Её надо создать один раз, после этого можно будет "
+              "добавлять разделы.",
+        "en": "The disk is blank: it has no partition table at all.\n"
+              "Create it once, then you can add partitions.",
+    },
+    "pe_hint_empty": {
+        "ru": "Таблица разделов есть, разделов пока нет.\n"
+              "Выбери строку со свободным местом и нажми "
+              "«Создать раздел».",
+        "en": "The partition table exists, there are no partitions yet.\n"
+              "Select the free space row and press “Create partition”.",
+    },
+    "pe_mklabel_title": {"ru": "Создать таблицу разделов?",
+                         "en": "Create partition table?"},
+    "pe_mklabel_text": {
+        "ru": "На диске %s будет создана таблица разделов %s.\n\n"
+              "Диск сейчас пуст, терять на нём нечего — данные "
+              "не пострадают.",
+        "en": "A partition table will be created on %s: %s.\n\n"
+              "The disk is empty, there is nothing to lose — "
+              "no data will be harmed.",
+    },
+    "pe_mklabel_yes": {"ru": "Создать", "en": "Create"},
+
+    # --- сессия 6: Bug 45 и Bug 46, метка "loop": ФС прямо на устройстве ---
+    "pe_nolabel_fs": {
+        "ru": "На диске %s нет таблицы разделов, но есть файловая система "
+              "%s — она занимает весь диск целиком.\n"
+              "Чтобы поставить сюда систему, нужна таблица разделов, "
+              "и все данные с диска при этом пропадут.",
+        "en": "Disk %s has no partition table, but it does hold a %s "
+              "filesystem spanning the whole device.\n"
+              "Installing here needs a partition table, and creating one "
+              "will destroy everything on the disk.",
+    },
+    "pe_hint_nolabel_fs": {
+        "ru": "На этом диске нет таблицы разделов: файловая система "
+              "записана прямо на устройство.\n"
+              "Так бывает у флешек и внешних дисков. Разделов тут нет "
+              "и не будет, пока не создана таблица.",
+        "en": "This disk has no partition table: the filesystem is written "
+              "straight onto the device.\n"
+              "Common for flash drives and external disks. It has no "
+              "partitions and cannot have any until a table is created.",
+    },
+    "pe_mklabel_text_fs": {
+        "ru": "На диске %s будет создана таблица разделов %s.\n\n"
+              "ВНИМАНИЕ: сейчас на диске лежит файловая система %s, "
+              "записанная прямо на устройство. Все данные на ней "
+              "пропадут безвозвратно.\n\n"
+              "Если там есть что-то нужное — нажми «Отмена» и сначала "
+              "скопируй файлы в другое место.",
+        "en": "A partition table will be created on %s: %s.\n\n"
+              "WARNING: the disk currently holds a %s filesystem written "
+              "straight onto the device. All data on it will be lost "
+              "for good.\n\n"
+              "If anything there matters, press \u201cCancel\u201d and copy "
+              "the files elsewhere first.",
+    },
+    "pe_pick_part": {"ru": "Сначала выбери раздел в таблице.", "en": "Select a partition first."},
+    "pe_pick_free": {"ru": "Сначала выбери свободное место (бирюзовая строка).",
+                     "en": "Select free space first (the teal row)."},
+    "pe_can_create": {"ru": "Здесь можно создать раздел.",
+                      "en": "You can create a partition here."},
+    "pe_confirm_title": {"ru": "Удалить раздел?", "en": "Delete partition?"},
+    "pe_confirm_text": {
+        "ru": "Будет удалён:\n\n%s\n\n"
+              "Все данные на нём пропадут безвозвратно.\n"
+              "Отменить это действие уже нельзя.",
+        "en": "About to delete:\n\n%s\n\n"
+              "All data on it will be lost for good.\n"
+              "This cannot be undone.",
+    },
+    "pe_confirm_yes": {"ru": "Да, удалить", "en": "Yes, delete"},
+    "pe_cancel": {"ru": "Отмена", "en": "Cancel"},
+    "pe_err_title": {"ru": "Не получилось", "en": "Failed"},
+    "pe_done_del": {"ru": "Раздел удалён: %s", "en": "Partition deleted: %s"},
+    "pe_done_new": {"ru": "Раздел создан: %s", "en": "Partition created: %s"},
+    "pe_busy": {"ru": "Работаю, подожди…", "en": "Working, please wait…"},
+
+    "pe_new_title": {"ru": "Создать раздел", "en": "Create partition"},
+    "pe_new_avail": {"ru": "Свободно в этом месте: %s", "en": "Free here: %s"},
+    "pe_new_size": {"ru": "Размер", "en": "Size"},
+    "pe_new_size_ph": {"ru": "например 40G — или оставь пустым, чтобы занять всё",
+                       "en": "e.g. 40G — or leave empty to use all of it"},
+    "pe_new_fs": {"ru": "Файловая система", "en": "File system"},
+    "pe_new_fs_none": {"ru": "Не создавать (пустой раздел)", "en": "None (empty partition)"},
+    "pe_new_ok": {"ru": "Создать", "en": "Create"},
+    "pe_new_note": {
+        "ru": "Точку монтирования назначишь на предыдущем экране.\n"
+              "Для раздела EFI выбери fat32 — флаг загрузки поставится сам.",
+        "en": "Mount points are assigned on the previous screen.\n"
+              "For an EFI partition pick fat32 — the boot flag is set automatically.",
+    },
+    "pe_bad_size": {"ru": "Не понимаю размер «%s». Примеры: 512M, 40G, 1.5G.",
+                    "en": "Cannot read the size “%s”. Examples: 512M, 40G, 1.5G."},
+    "pe_size_big": {"ru": "Это больше, чем свободно здесь (%s).",
+                    "en": "That is more than the free space here (%s)."},
+    "pe_size_small": {"ru": "Слишком мало — нужно хотя бы %s.",
+                      "en": "Too small — at least %s is needed."},
 
     "user_title": {"ru": "Создание пользователя", "en": "Create your user"},
     "username": {"ru": "Имя пользователя", "en": "Username"},
@@ -168,6 +324,48 @@ STRINGS = {
         "en": "Root is too large — no space left for /home.",
     },
     "err_luks_empty": {"ru": "Введи пароль шифрования.", "en": "Enter the encryption password."},
+    # --- этап 5: запреты уровня 1 на странице разметки ---
+    "err_root_fs": {
+        "ru": "Корень «/» стоит на файловой системе %s — система туда не поставится.\n"
+              "Поставь галку «Форматировать» и выбери ext4 или btrfs.",
+        "en": "Root “/” sits on a %s filesystem — the system cannot be installed there.\n"
+              "Tick “Format” and choose ext4 or btrfs.",
+    },
+    "err_no_fs": {
+        "ru": "На разделе %s нет файловой системы, а он назначен на «%s».\n"
+              "Либо поставь галку «Форматировать», либо сними точку монтирования.",
+        "en": "Partition %s has no filesystem but is assigned to “%s”.\n"
+              "Either tick “Format” or clear the mountpoint.",
+    },
+    "err_boot_fs": {
+        "ru": "«/boot» стоит на файловой системе %s — загрузчик оттуда не запустится.\n"
+              "Поставь галку «Форматировать» и выбери ext4.",
+        "en": "“/boot” sits on a %s filesystem — the bootloader will not start from it.\n"
+              "Tick “Format” and choose ext4.",
+    },
+    "err_efi_fs": {
+        "ru": "«/efi» стоит на файловой системе %s, а EFI-раздел обязан быть FAT32.\n"
+              "Возьми настоящий EFI-раздел или отформатируй этот в fat32.",
+        "en": "“/efi” sits on a %s filesystem, but an EFI partition must be FAT32.\n"
+              "Pick a real EFI partition or format this one as fat32.",
+    },
+    # --- этап 5: предупреждения уровня 2 (НЕ блокируют «Далее») ---
+    "warn_root_small": {
+        "ru": "Под корень «/» отведено всего %s. Система с играми туда не влезет — советую от 20 ГиБ.",
+        "en": "Only %s is allocated to root “/”. A system with games will not fit — 20 GiB or more is advised.",
+    },
+    "warn_boot_small": {
+        "ru": "«/boot» всего %s. С двумя ядрами место кончится и обновление оборвётся — советую от 512 МиБ.",
+        "en": "“/boot” is only %s. With two kernels it will fill up and updates will fail — 512 MiB or more is advised.",
+    },
+    "warn_esp_full": {
+        "ru": "На EFI-разделе %s свободно всего %s, а загрузчику нужно около %s. Установка может оборваться.",
+        "en": "EFI partition %s has only %s free, the bootloader needs about %s. Installation may fail.",
+    },
+    "warn_no_probe": {
+        "ru": "Проверить разделы Windows не удалось — защита от их форматирования сейчас не работает.",
+        "en": "Could not inspect the Windows partitions — protection against formatting them is inactive.",
+    },
     "err_luks_pass": {"ru": "Пароли шифрования не совпадают.", "en": "Encryption passwords do not match."},
     "not_live": {
         "ru": "Установка запускается только с загрузочного ISO.\nКонфиги записаны в /tmp/pzhavos для проверки.",
@@ -175,10 +373,20 @@ STRINGS = {
     },
 
     "progress_title": {"ru": "Установка", "en": "Installing"},
-    "progress_running": {"ru": "Идёт установка, не выключай компьютер…", "en": "Installing, do not power off…"},
+    "progress_running": {"ru": "Идёт установка. Обычно занимает 10–30 минут — не выключай компьютер.", "en": "Installing. Usually takes 10–30 minutes — do not power off."},
     "progress_done": {"ru": "Готово! Установка завершена.", "en": "Done! Installation complete."},
     "progress_fail": {"ru": "Установка завершилась с ошибкой. Лог ниже и в /tmp/pzhavos/install.log", "en": "Installation failed. Log below and in /tmp/pzhavos/install.log"},
     "reboot": {"ru": "Перезагрузить", "en": "Reboot"},
+
+    # --- v9: индикатор этапа установки ---
+    "stage_prepare": {"ru": "Подготовка…", "en": "Preparing…"},
+    "stage_db": {"ru": "Обновляю базу пакетов…", "en": "Refreshing package database…"},
+    "stage_disk": {"ru": "Размечаю диск…", "en": "Partitioning the disk…"},
+    "stage_pkgs": {"ru": "Устанавливаю: %s", "en": "Installing: %s"},
+    "stage_profile": {"ru": "Ставлю окружение: %s", "en": "Installing desktop: %s"},
+    "stage_pkg": {"ru": "Пакеты: %s из %s", "en": "Packages: %s of %s"},
+    "stage_fstab": {"ru": "Записываю таблицу разделов…", "en": "Writing fstab…"},
+    "stage_sync": {"ru": "Сбрасываю данные на диск…", "en": "Syncing to disk…"},
 }
 
 

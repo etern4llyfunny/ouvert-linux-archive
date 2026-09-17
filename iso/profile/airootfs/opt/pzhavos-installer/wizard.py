@@ -33,9 +33,9 @@ class InstallerWindow(QMainWindow):
             "password": "",
             "password2": "",
             "hostname": "pzhavos",
-            "profile": "KDE Plasma",
-            "profile_name": "KDE Plasma",
-            "greeter": "plasma-login-manager",
+            "profile": "Cinnamon",
+            "profile_name": "Cinnamon",
+            "greeter": "lightdm-gtk-greeter",
             "disk": None,
             "disk_desc": None,
             "disk_size": 0,
@@ -157,6 +157,28 @@ class InstallerWindow(QMainWindow):
                 return tr("err_no_boot")
             if len(mps) != len(set(mps)):
                 return tr("err_dup_mount")
+            from diskmap import LINUX_FS, is_fat
+            for p in s.get("manual_parts") or []:
+                mp = p.get("mountpoint")
+                if not mp:
+                    continue
+                # ЭФФЕКТИВНАЯ ФС — та, что окажется на разделе ПОСЛЕ
+                # установки. Проверять только «сохраняем» мало: ntfs
+                # можно выбрать и в списке при форматировании.
+                if p.get("format"):
+                    fs = (p.get("fs") or "").lower()
+                else:
+                    fs = (p.get("cur_fs") or "").lower()
+                    if not fs:
+                        return tr("err_no_fs") % (p["path"], mp)
+                if mp == "/" and fs not in LINUX_FS:
+                    return tr("err_root_fs") % fs
+                # /boot бывает и fat32 (когда ESP смонтирован как /boot),
+                # и ext4 (когда ESP вынесен отдельно в /efi) — годятся оба
+                if mp == "/boot" and fs not in LINUX_FS and not is_fat(fs):
+                    return tr("err_boot_fs") % fs
+                if mp == "/efi" and not is_fat(fs):
+                    return tr("err_efi_fs") % fs
             return None
 
         # режим «Стереть диск»

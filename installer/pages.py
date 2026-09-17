@@ -9,14 +9,59 @@ from PySide6.QtCore import QProcess, QProcessEnvironment, Qt, QTimer, Signal
 from PySide6.QtGui import QFont, QTextCursor
 from PySide6.QtWidgets import (
     QButtonGroup, QCheckBox, QComboBox, QFormLayout, QGroupBox, QHBoxLayout,
-    QLabel, QLineEdit, QPlainTextEdit, QPushButton, QRadioButton, QScrollArea,
-    QVBoxLayout, QWidget,
+    QLabel, QLineEdit, QPlainTextEdit, QProgressBar, QPushButton, QRadioButton,
+    QScrollArea, QVBoxLayout, QWidget,
 )
 
 from desktops import DESKTOP_ENVIRONMENTS, WINDOW_MANAGERS
 from i18n import current_lang, set_lang, tr
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+# --- v9: разбор потока archinstall для индикатора этапа ---
+# Префикс логгера "[2026-07-27 12:00:50] - INFO - ". В stdout обычно не
+# приходит (в GUI строки видны голыми), но если придёт — срежем.
+_RE_LOGPFX = re.compile(r"^\[[^\]]+\]\s*-\s*\w+\s*-\s*")
+# pacman: "(347/932) installing foo". В /var/log/archinstall/install.log
+# таких строк НЕТ (проверено на t23). Если не придут и в stdout — счётчик
+# просто не появится, остальное работает.
+_RE_PKGNUM = re.compile(r"\((\d+)/(\d+)\)\s+\w+")
+# Эти две ТОЧНО есть, сняты с живого лога t23.
+_RE_PKGS = re.compile(r"Installing packages:\s*\[(.+?)\]")
+_RE_PROFILE = re.compile(r"Installing profile\s+(.+?)\s*\.{0,3}$")
+# Общие фазы: подстрока -> ключ i18n.
+_STAGE_HINTS = (
+    ("fetching", "stage_db"),
+    ("device modifications", "stage_disk"),
+    ("fstab", "stage_fstab"),
+    ("syncing", "stage_sync"),
+)
+
+# --- v10: брендинг вывода archinstall ---
+# Меняем ТОЛЬКО фразу «Arch Linux» (с пробелом, по границам слова).
+# НЕ трогаем archlinux-keyring-wkd-sync (юнит), /var/log/archinstall (путь),
+# arch-chroot (команда) — в них пробела нет. Три строки, которые это чинит,
+# сняты с живого лога t24: Fetching / keyring sync / NTP servers.
+_BRAND_SRC = "Arch Linux"
+_BRAND_DST = "PzhavOS"
+_RE_BRAND = re.compile(r"\bArch Linux\b")
+
+
+def _rebrand(text: str, carry: str = "") -> tuple[str, str]:
+    """Подменяет бренд ТОЛЬКО для показа в окне (в файл лога идёт сырой текст).
+
+    Поток приходит кусками, фраза может разорваться на границе чтения.
+    Возвращает (готовый к показу текст, отложенный хвост).
+    """
+    text = carry + text
+    keep = 0
+    for n in range(min(len(_BRAND_SRC) - 1, len(text)), 0, -1):
+        if _BRAND_SRC.startswith(text[-n:]):
+            keep = n
+            break
+    if keep:
+        return _RE_BRAND.sub(_BRAND_DST, text[:-keep]), text[-keep:]
+    return _RE_BRAND.sub(_BRAND_DST, text), ""
 
 GFX_DRIVERS = [
     "All open-source",
@@ -590,16 +635,39 @@ class ProgressPage(BasePage):
             lambda: QProcess.startDetached("systemctl", ["reboot"])
         )
 
+        # --- v9: маркиз + строка этапа ---
+        self.bar = QProgressBar()
+        self.bar.setTextVisible(False)
+        self.bar.setRange(0, 0)          # 0,0 = бесконечная бегущая полоса
+        self.bar.setFixedHeight(10)
+        self.bar.setStyleSheet(
+            "QProgressBar { background: #2b2b2b; border: none; border-radius: 5px; }"
+            "QProgressBar::chunk { background: #4a9d94; border-radius: 5px; }"
+        )
+        self.stage = QLabel()
+        self.stage.setStyleSheet("color: #9aa0a6;")
+        self.bar.hide()
+        self.stage.hide()
+
         self.body.addWidget(self.status)
+        self.body.addWidget(self.bar)
+        self.body.addWidget(self.stage)
         self.body.addWidget(self.log, 1)
         self.body.addWidget(self.reboot_btn, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.proc: QProcess | None = None
         self._logfile = None
+        self._buf = ""          # хвост неполной строки между чтениями
+        self._wbuf = ""         # v10: хвост на случай разрыва «Arch Linux»
         self.retranslate()
 
     def start_install(self, config_path: Path, creds_path: Path) -> None:
         self.status.setText(tr("progress_running"))
+        self._buf = ""
+        self._wbuf = ""
+        self.bar.show()
+        self.stage.setText(tr("stage_prepare"))
+        self.stage.show()
         Path("/tmp/pzhavos").mkdir(parents=True, exist_ok=True)
         self._logfile = open("/tmp/pzhavos/install.log", "a", encoding="utf-8")
 
@@ -620,16 +688,64 @@ class ProgressPage(BasePage):
         if self._logfile:
             self._logfile.write(text)
             self._logfile.flush()
+        shown, self._wbuf = _rebrand(text, self._wbuf)
         self.log.moveCursor(QTextCursor.MoveOperation.End)
-        self.log.insertPlainText(text)
+        self.log.insertPlainText(shown)
         sb = self.log.verticalScrollBar()
         sb.setValue(sb.maximum())
+        self._scan(text)
+
+    def _scan(self, chunk: str) -> None:
+        """Вытаскивает из потока archinstall текущий этап. Никогда не кидает
+        исключений наружу: сломанный индикатор не должен ронять установку."""
+        try:
+            self._buf += chunk
+            parts = self._buf.split("\n")
+            self._buf = parts.pop()          # хвост без \n оставляем на потом
+            for raw in parts:
+                line = _RE_LOGPFX.sub("", _ANSI.sub("", raw).strip())
+                if not line:
+                    continue
+
+                m = _RE_PKGNUM.search(line)
+                if m:
+                    self.stage.setText(tr("stage_pkg") % (m.group(1), m.group(2)))
+                    continue
+
+                m = _RE_PROFILE.search(line)
+                if m:
+                    self.stage.setText(tr("stage_profile") % m.group(1))
+                    continue
+
+                m = _RE_PKGS.search(line)
+                if m:
+                    names = [n.strip().strip("'\"") for n in m.group(1).split(",")]
+                    names = [n for n in names if n]
+                    shown = ", ".join(names[:3])
+                    if len(names) > 3:
+                        shown += " +%d" % (len(names) - 3)
+                    self.stage.setText(tr("stage_pkgs") % shown)
+                    continue
+
+                low = line.lower()
+                for needle, key in _STAGE_HINTS:
+                    if needle in low:
+                        self.stage.setText(tr(key))
+                        break
+        except Exception:
+            pass
 
     def _done(self, code: int, _status) -> None:
         if self._logfile:
             self._logfile.close()
             self._logfile = None
+        if self._wbuf:                     # v10: досылаем отложенный хвост
+            self.log.moveCursor(QTextCursor.MoveOperation.End)
+            self.log.insertPlainText(self._wbuf)
+            self._wbuf = ""
         ok = code == 0
+        self.bar.hide()
+        self.stage.hide()
         self.status.setText(tr("progress_done") if ok else tr("progress_fail"))
         self.reboot_btn.setVisible(ok)
 
