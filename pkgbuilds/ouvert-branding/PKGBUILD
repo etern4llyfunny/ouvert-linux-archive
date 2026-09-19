@@ -5,15 +5,12 @@ pkgrel=6
 pkgdesc="Оформление Ouvert Linux: обои, логотип, конфиг fastfetch"
 arch=('any')
 url="https://example.com/ouvert"
-license=('LicenseRef-Ouvert Linux')
+license=('LicenseRef-Ouvert')
 depends=('fastfetch' 'bash')
 # chafa нужен только для генерации fastfetch-logo.ansi (делается заранее),
 # в рантайме лого статичен, поэтому в depends его нет.
 source=('ouvert.png'
         'ouvert-walp.png'
-        'ouvert-walp2.png'
-        'ouvert-walp3.png'
-        'ouvert-kde.png'
         'ouvert-logo.png'
         'grub-bg.png'
         'fastfetch-logo.ansi'
@@ -21,7 +18,6 @@ source=('ouvert.png'
         'fastfetch-config.jsonc'
         'ouvert-wallpapers.hook'
         'ouvert-restore-wallpapers.sh'
-        'ouvert-cosmic.png'
         'cosmic-bg-all'
         'cosmic-bg-backgrounds'
         'LICENSE')
@@ -36,22 +32,12 @@ sha256sums=('SKIP'
             'SKIP'
             'SKIP'
             'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
             'SKIP')
 
 package() {
-    # Обои (все 4: ouvert — дефолт, walp1-3 — запас, лежат в системе)
+    # Обои: ouvert — дефолт (угол), ouvert-walp — запасная (лок-ап)
     install -Dm644 "$srcdir/ouvert.png"        "$pkgdir/usr/share/wallpapers/Ouvert/ouvert.png"
     install -Dm644 "$srcdir/ouvert-walp.png"  "$pkgdir/usr/share/wallpapers/Ouvert/ouvert-walp.png"
-    install -Dm644 "$srcdir/ouvert-walp2.png" "$pkgdir/usr/share/wallpapers/Ouvert/ouvert-walp2.png"
-    install -Dm644 "$srcdir/ouvert-walp3.png" "$pkgdir/usr/share/wallpapers/Ouvert/ouvert-walp3.png"
-    install -Dm644 "$srcdir/ouvert-kde.png"    "$pkgdir/usr/share/wallpapers/Ouvert/ouvert-kde.png"
-    # Bug 47 cosmic: обои COSMIC
-    install -Dm644 "$srcdir/ouvert-cosmic.png" "$pkgdir/usr/share/wallpapers/Ouvert/ouvert-cosmic.png"
 
     # Логотип дистрибутива (для LOGO= в os-release и общего использования)
     install -Dm644 "$srcdir/ouvert-logo.png" "$pkgdir/usr/share/pixmaps/ouvert.png"
