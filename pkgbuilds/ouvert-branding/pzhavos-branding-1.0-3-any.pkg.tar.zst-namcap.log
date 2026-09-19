@@ -1,0 +1,2 @@
+pzhavos-branding E: Uncommon license identifiers such as 'LicenseRef-PzhavOS' require license files below /usr/share/licenses/pzhavos-branding/ or switching to common license identifiers. Found 0/1 required license files.
+pzhavos-branding W: Dependency included, but may not be needed ('fastfetch')

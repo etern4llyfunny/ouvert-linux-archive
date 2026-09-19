@@ -1,8 +1,8 @@
-PzhavOS live environment.
+Ouvert Linux live environment.
 
 The installer starts automatically on tty1.
 If it did not, run it manually:
-    python /opt/pzhavos-installer/main.py --live
+    python /opt/ouvert-installer/main.py --live
 
 Network:
     Wi-Fi ............ iwctl

@@ -1,0 +1,12 @@
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Target = usr/share/backgrounds/xfce/*
+Target = usr/share/wallpapers/Next/contents/images/*
+Target = usr/share/wallpapers/Next/contents/images_dark/*
+
+[Action]
+Description = Restoring Ouvert Linux wallpapers...
+When = PostTransaction
+Exec = /usr/share/ouvert/restore-wallpapers.sh

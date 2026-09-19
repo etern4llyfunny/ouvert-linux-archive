@@ -6,4 +6,9 @@ ovmf_vars.fd
 test.qcow2
 repo/build/
 *.qcow2
-iso/profile/airootfs/opt/pzhavos-repo/
+iso/profile/airootfs/opt/ouvert-repo/
+iso/wm/dmenu/
+iso/wm/dwm/
+iso/wm/slstatus/
+backups/
+*bak*

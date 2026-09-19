@@ -1,0 +1,2 @@
+pzhavos-branding E: custom is not a valid SPDX license identifier. See https://spdx.org/licenses/ for valid identifiers, or prefix the identifier with 'LicenseRef-', if it is custom.
+pzhavos-branding W: Dependency included, but may not be needed ('fastfetch')

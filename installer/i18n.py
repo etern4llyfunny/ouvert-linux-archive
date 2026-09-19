@@ -3,13 +3,13 @@
 _LANG = "ru"
 
 STRINGS = {
-    "app_title": {"ru": "Установщик PzhavOS", "en": "PzhavOS Installer"},
+    "app_title": {"ru": "Установщик Ouvert Linux", "en": "Ouvert Linux Installer"},
     "back": {"ru": "Назад", "en": "Back"},
     "next": {"ru": "Далее", "en": "Next"},
     "install": {"ru": "Установить", "en": "Install"},
     "step": {"ru": "Шаг", "en": "Step"},
 
-    "welcome_title": {"ru": "Добро пожаловать в установщик PzhavOS!", "en": "Welcome to the PzhavOS installer!"},
+    "welcome_title": {"ru": "Добро пожаловать в установщик Ouvert Linux!", "en": "Welcome to the Ouvert Linux installer!"},
     "welcome_text": {
         "ru": "Пара простых шагов — и система готова.\nВыбери язык установки:",
         "en": "A few simple steps and your system is ready.\nChoose the installer language:",
@@ -50,6 +50,9 @@ STRINGS = {
     },
     "tz_region": {"ru": "Регион", "en": "Region"},
     "tz_city": {"ru": "Город", "en": "City"},
+    "tz_pick_region": {"ru": "Выберите регион", "en": "Select region"},
+    "tz_pick_city": {"ru": "Выберите город", "en": "Select city"},
+    "err_no_tz": {"ru": "Выбери регион и город.", "en": "Select region and city."},
 
     "disk_title": {"ru": "Куда ставим систему?", "en": "Where do we install?"},
     "disk_warn": {
@@ -368,14 +371,14 @@ STRINGS = {
     },
     "err_luks_pass": {"ru": "Пароли шифрования не совпадают.", "en": "Encryption passwords do not match."},
     "not_live": {
-        "ru": "Установка запускается только с загрузочного ISO.\nКонфиги записаны в /tmp/pzhavos для проверки.",
-        "en": "Installation only runs from the live ISO.\nConfigs written to /tmp/pzhavos for review.",
+        "ru": "Установка запускается только с загрузочного ISO.\nКонфиги записаны в /tmp/ouvert для проверки.",
+        "en": "Installation only runs from the live ISO.\nConfigs written to /tmp/ouvert for review.",
     },
 
     "progress_title": {"ru": "Установка", "en": "Installing"},
     "progress_running": {"ru": "Идёт установка. Обычно занимает 10–30 минут — не выключай компьютер.", "en": "Installing. Usually takes 10–30 minutes — do not power off."},
     "progress_done": {"ru": "Готово! Установка завершена.", "en": "Done! Installation complete."},
-    "progress_fail": {"ru": "Установка завершилась с ошибкой. Лог ниже и в /tmp/pzhavos/install.log", "en": "Installation failed. Log below and in /tmp/pzhavos/install.log"},
+    "progress_fail": {"ru": "Установка завершилась с ошибкой. Лог ниже и в /tmp/ouvert/install.log", "en": "Installation failed. Log below and in /tmp/ouvert/install.log"},
     "reboot": {"ru": "Перезагрузить", "en": "Reboot"},
 
     # --- v9: индикатор этапа установки ---

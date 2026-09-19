@@ -32,7 +32,7 @@ class InstallerWindow(QMainWindow):
             "username": "",
             "password": "",
             "password2": "",
-            "hostname": "pzhavos",
+            "hostname": "ouvert",
             "profile": "Cinnamon",
             "profile_name": "Cinnamon",
             "greeter": "lightdm-gtk-greeter",
@@ -214,11 +214,11 @@ class InstallerWindow(QMainWindow):
     def _start_install(self) -> None:
         err = self._validate()
         if err:
-            QMessageBox.warning(self, "PzhavOS", err)
+            QMessageBox.warning(self, "Ouvert Linux", err)
             return
         cfg, creds = write_configs(self.state)
         if not LIVE_MARKER.exists():
-            QMessageBox.information(self, "PzhavOS", tr("not_live"))
+            QMessageBox.information(self, "Ouvert Linux", tr("not_live"))
             return
         self.btn_back.hide()
         self.btn_next.hide()
@@ -233,14 +233,17 @@ class InstallerWindow(QMainWindow):
 
         if delta > 0:
             page = self.pages[i]
+            if (check := getattr(page, "validate", None)) and (err := check()):
+                QMessageBox.warning(self, "Ouvert Linux", err)
+                return
             if page is self.net_page and not self.state.get("net_ok"):
-                QMessageBox.warning(self, "PzhavOS", tr("err_no_net"))
+                QMessageBox.warning(self, "Ouvert Linux", tr("err_no_net"))
                 return
             if isinstance(page, DiskPage) and (err := self._validate_disk()):
-                QMessageBox.warning(self, "PzhavOS", err)
+                QMessageBox.warning(self, "Ouvert Linux", err)
                 return
             if isinstance(page, PartitioningPage) and (err := self._validate_part()):
-                QMessageBox.warning(self, "PzhavOS", err)
+                QMessageBox.warning(self, "Ouvert Linux", err)
                 return
             if i == self.summary_index:
                 self._start_install()

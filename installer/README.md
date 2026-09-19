@@ -1,9 +1,9 @@
-# PzhavOS Installer (каркас, Этап 1)
+# Ouvert Linux Installer (каркас, Этап 1)
 
 PySide6-фронтенд. Логика archinstall подключается позже как библиотека.
 
 ## Запуск для разработки (ХОСТ)
-    cd ~/pzhavos/installer
+    cd ~/ouvert/installer
     python main.py
 
 ## Структура

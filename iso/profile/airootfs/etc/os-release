@@ -1,0 +1,7 @@
+NAME="Ouvert Linux"
+PRETTY_NAME="Ouvert Linux"
+ID=ouvert
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;46;159;240"
+LOGO=ouvert

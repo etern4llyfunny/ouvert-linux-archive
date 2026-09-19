@@ -31,7 +31,7 @@ from desktops import CUSTOM_SETTINGS
 
 VERSION = "v9"
 
-OUT_DIR = Path("/tmp/pzhavos")
+OUT_DIR = Path("/tmp/ouvert")
 CONFIG_PATH = OUT_DIR / "user_configuration.json"
 CREDS_PATH = OUT_DIR / "user_credentials.json"
 
@@ -199,7 +199,7 @@ def build_custom_commands(state: dict) -> list[str]:
             "XORGEOF\n"
         )
 
-        # --- PzhavOS: раскладка для DE, которые X11-файл ИГНОРИРУЮТ ---
+        # --- Ouvert Linux: раскладка для DE, которые X11-файл ИГНОРИРУЮТ ---
         # KDE Plasma на Wayland читает ~/.config/kxkbrc (эталон снят с t18),
         # GNOME/Cinnamon — dconf (org/gnome/desktop/input-sources).
         # Юзер создаётся ДО этих команд -> skel уже не доедет, докопируем.
@@ -233,7 +233,7 @@ def build_custom_commands(state: dict) -> list[str]:
             "user-db:user\n"
             "system-db:local\n"
             "USRPEOF\n"
-            "cat > /etc/dconf/db/local.d/02-pzhavos-keyboard <<'KBDEOF'\n"
+            "cat > /etc/dconf/db/local.d/02-ouvert-keyboard <<'KBDEOF'\n"
             "[org/gnome/desktop/input-sources]\n"
             f"sources=[{srcs}]\n"
             f"xkb-options=['{opts}']\n"
@@ -263,15 +263,15 @@ def build_custom_commands(state: dict) -> list[str]:
             f"printf 'XKB_DEFAULT_LAYOUT={layout}\\nXKB_DEFAULT_OPTIONS={opts}\\n' >> /etc/environment\n"
         )
 
-    # Чистка секции [pzhavos] из pacman.conf ЦЕЛИ. Блоков там ДВА
+    # Чистка секции [ouvert] из pacman.conf ЦЕЛИ. Блоков там ДВА
     # (см. комментарий у CUSTOM_REPOS). Каждый — ровно 3 строки:
-    #   [pzhavos] / SigLevel = ... / Server = ...
+    #   [ouvert] / SigLevel = ... / Server = ...
     # (repositories_config(), lib/models/mirrors.py). Диапазон /re/,+2
     # sed применяет к каждому совпадению, так что уйдут оба.
-    # Без этого pacman -Syu у юзера падает: file:///opt/pzhavos-repo
+    # Без этого pacman -Syu у юзера падает: file:///opt/ouvert-repo
     # после перезагрузки не существует.
     # Бонус: пакеты становятся foreign -> paru видит для них обновления
-    # в AUR. Если оставить [pzhavos], paru счёл бы их реповыми и не
+    # в AUR. Если оставить [ouvert], paru счёл бы их реповыми и не
     # обновлял бы никогда.
     cmds.append(
         "set -e\n"
@@ -291,7 +291,7 @@ def build_custom_commands(state: dict) -> list[str]:
     cmds.append(
         "set -e\n"
         "mkdir -p /etc/chromium/policies/managed\n"
-        "cat > /etc/chromium/policies/managed/pzhavos-search.json <<'DDGEOF'\n"
+        "cat > /etc/chromium/policies/managed/ouvert-search.json <<'DDGEOF'\n"
         '{\n'
         '  "DefaultSearchProviderEnabled": true,\n'
         '  "DefaultSearchProviderName": "DuckDuckGo",\n'
@@ -310,21 +310,21 @@ def build_custom_commands(state: dict) -> list[str]:
         # (пакет filesystem). Файл в /etc перекрывает /usr/lib.
         "rm -f /etc/os-release\n"
         "cat > /etc/os-release <<'OSREOF'\n"
-        'NAME="PzhavOS"\n'
-        'PRETTY_NAME="PzhavOS"\n'
-        "ID=pzhavos\n"
+        'NAME="Ouvert Linux"\n'
+        'PRETTY_NAME="Ouvert Linux"\n'
+        "ID=ouvert\n"
         "ID_LIKE=arch\n"
         "BUILD_ID=rolling\n"
-        'ANSI_COLOR="38;2;69;136;131"\n'
-        # LOGO — имя иконки; pzhavos.png лежит в /usr/share/pixmaps
-        # (пакет pzhavos-branding), pixmaps — штатный fallback поиска иконок.
-        "LOGO=pzhavos\n"
+        'ANSI_COLOR="38;2;46;159;240"\n'
+        # LOGO — имя иконки; ouvert.png лежит в /usr/share/pixmaps
+        # (пакет ouvert-branding), pixmaps — штатный fallback поиска иконок.
+        "LOGO=ouvert\n"
         "OSREOF\n"
         # GRUB: имя в пунктах меню + фоновая картинка.
-        "sed -i 's|^#\\?GRUB_DISTRIBUTOR=.*|GRUB_DISTRIBUTOR=\"PzhavOS\"|' /etc/default/grub\n"
+        "sed -i 's|^#\\?GRUB_DISTRIBUTOR=.*|GRUB_DISTRIBUTOR=\"Ouvert Linux\"|' /etc/default/grub\n"
         "grep -q '^GRUB_BACKGROUND=' /etc/default/grub"
-        " && sed -i 's|^GRUB_BACKGROUND=.*|GRUB_BACKGROUND=\"/usr/share/pzhavos/grub-bg.png\"|' /etc/default/grub"
-        " || echo 'GRUB_BACKGROUND=\"/usr/share/pzhavos/grub-bg.png\"' >> /etc/default/grub\n"
+        " && sed -i 's|^GRUB_BACKGROUND=.*|GRUB_BACKGROUND=\"/usr/share/ouvert/grub-bg.png\"|' /etc/default/grub"
+        " || echo 'GRUB_BACKGROUND=\"/usr/share/ouvert/grub-bg.png\"' >> /etc/default/grub\n"
         "grep -q '^GRUB_TERMINAL_OUTPUT=' /etc/default/grub"
         " && sed -i 's|^GRUB_TERMINAL_OUTPUT=.*|GRUB_TERMINAL_OUTPUT=console|' /etc/default/grub"
         " || echo 'GRUB_TERMINAL_OUTPUT=console' >> /etc/default/grub\n"
@@ -350,7 +350,7 @@ def build_custom_commands(state: dict) -> list[str]:
         "system-db:gdm\n"
         "file-db:/usr/share/gdm/greeter-dconf-defaults\n"
         "GDMPEOF\n"
-        "cat > /etc/dconf/db/gdm.d/07-pzhavos-nologo <<'GDMLEOF'\n"
+        "cat > /etc/dconf/db/gdm.d/07-ouvert-nologo <<'GDMLEOF'\n"
         "[org/gnome/login-screen]\n"
         "logo=''\n"
         "GDMLEOF\n"
@@ -363,14 +363,14 @@ def build_custom_commands(state: dict) -> list[str]:
         "user-db:user\n"
         "system-db:local\n"
         "USRPEOF\n"
-        "  cat > /etc/dconf/db/local.d/01-pzhavos-background <<'BGEOF'\n"
+        "  cat > /etc/dconf/db/local.d/01-ouvert-background <<'BGEOF'\n"
         "[org/gnome/desktop/background]\n"
-        "picture-uri='file:///usr/share/wallpapers/PzhavOS/pzhav.png'\n"
-        "picture-uri-dark='file:///usr/share/wallpapers/PzhavOS/pzhav.png'\n"
+        "picture-uri='file:///usr/share/wallpapers/Ouvert/ouvert.png'\n"
+        "picture-uri-dark='file:///usr/share/wallpapers/Ouvert/ouvert.png'\n"
         "picture-options='zoom'\n"
         "\n"
         "[org/cinnamon/desktop/background]\n"
-        "picture-uri='file:///usr/share/wallpapers/PzhavOS/pzhav.png'\n"
+        "picture-uri='file:///usr/share/wallpapers/Ouvert/ouvert.png'\n"
         "BGEOF\n"
         "  dconf update || true\n"
         "fi\n"
@@ -382,24 +382,24 @@ def build_custom_commands(state: dict) -> list[str]:
         # чинится позже pacman-хуком).
         "if [ -d /usr/share/backgrounds/xfce ]; then\n"
         "  for f in /usr/share/backgrounds/xfce/*; do\n"
-        "    cp -f /usr/share/wallpapers/PzhavOS/pzhav.png \"$f\" || true\n"
+        "    cp -f /usr/share/wallpapers/Ouvert/ouvert.png \"$f\" || true\n"
         "  done\n"
         "fi\n"
-        # KDE Plasma: свои обои pzhav-kde.png. Дефолт в Plasma без правки
+        # KDE Plasma: свои обои ouvert-kde.png. Дефолт в Plasma без правки
         # конфига под монитор не задать, поэтому подменяем содержимое
         # ДЕФОЛТНОГО набора Next (пакет plasma-workspace-wallpapers): новый
         # юзер получает Next -> видит наш фон. Есть только если KDE стоит.
         # Все разрешения + images_dark, чтобы фон был на любой теме. Проверено t14.
         "if [ -d /usr/share/wallpapers/Next/contents ]; then\n"
         "  for f in /usr/share/wallpapers/Next/contents/images/*.png /usr/share/wallpapers/Next/contents/images_dark/*.png; do\n"
-        "    cp -f /usr/share/wallpapers/PzhavOS/pzhav-kde.png \"$f\" || true\n"
+        "    cp -f /usr/share/wallpapers/Ouvert/ouvert-kde.png \"$f\" || true\n"
         "  done\n"
         "fi\n"
         # ★ Bug 47 cosmic: обои COSMIC.
         # Здесь НЕ подмена чужих файлов, как в XFCE/KDE выше, а штатный
         # оверрайд cosmic-config. Системный дефолт /usr/share/cosmic/
         # принадлежит пакету cosmic-bg — туда писать нельзя. Свои ключи
-        # кладёт pzhavos-branding в /etc/skel, здесь разносим их по уже
+        # кладёт ouvert-branding в /etc/skel, здесь разносим их по уже
         # созданным /home/* (юзер создаётся ДО пакетов — лог t11).
         # Условие по каталогу, а не по выбору DE в GUI: юзер мог доставить
         # COSMIC вторым столом. Та же логика, что у блока Next выше.
@@ -418,12 +418,12 @@ def build_custom_commands(state: dict) -> list[str]:
         "  done\n"
         "fi\n"
         # fastfetch при открытии терминала. /etc/skel/.bashrc принадлежит
-        # пакету bash — класть свой skel-файл в pzhavos-branding нельзя
+        # пакету bash — класть свой skel-файл в ouvert-branding нельзя
         # (конфликт), поэтому дописываем здесь. custom_commands выполняются
         # ПОСЛЕ создания юзера -> правим и skel (будущие юзеры), и
         # существующие /home/* (уже созданный admin).
         # Патч 2: юзер создаётся ДО установки пакетов (лог t11) ->
-        # skel-файлы pzhavos-branding доезжают только до БУДУЩИХ юзеров.
+        # skel-файлы ouvert-branding доезжают только до БУДУЩИХ юзеров.
         # Существующим докопируем вручную (без перезаписи, вдруг юзер свой).
         "for h in /home/*; do\n"
         "  [ -d \"$h\" ] || continue\n"
@@ -432,13 +432,12 @@ def build_custom_commands(state: dict) -> list[str]:
         "    mkdir -p \"$h/.config/fastfetch\"\n"
         "    cp /etc/skel/.config/fastfetch/config.jsonc \"$h/.config/fastfetch/\" || true\n"
         "  fi\n"
-        "  [ -e \"$h/README-zapret2.txt\" ] || cp /etc/skel/README-zapret2.txt \"$h/\" || true\n"
-        "  chown -R \"$u:$u\" \"$h/.config\" \"$h/README-zapret2.txt\" 2>/dev/null || true\n"
+        "  chown -R \"$u:$u\" \"$h/.config\" 2>/dev/null || true\n"
         "done\n"
-        "printf '\\n# PzhavOS\\ncommand -v fastfetch >/dev/null 2>&1 && fastfetch\\n' >> /etc/skel/.bashrc\n"
+        "printf '\\n# Ouvert Linux\\ncommand -v fastfetch >/dev/null 2>&1 && fastfetch\\n' >> /etc/skel/.bashrc\n"
         "for h in /home/*; do\n"
         "  [ -d \"$h\" ] || continue\n"
-        "  printf '\\n# PzhavOS\\ncommand -v fastfetch >/dev/null 2>&1 && fastfetch\\n' >> \"$h/.bashrc\"\n"
+        "  printf '\\n# Ouvert Linux\\ncommand -v fastfetch >/dev/null 2>&1 && fastfetch\\n' >> \"$h/.bashrc\"\n"
         "  chown \"$(basename \"$h\"):$(basename \"$h\")\" \"$h/.bashrc\" || true\n"
         "done\n"
     )
@@ -717,26 +716,26 @@ def build_disk_config(state: dict) -> dict:
     return cfg
 
 
-# ── ЭТАП 2Б: РЕПОЗИТОРИЙ PZHAVOS И ПРЕДУСТАНОВКА ──────────────────────
+# ── ЭТАП 2Б: РЕПОЗИТОРИЙ OUVERT И ПРЕДУСТАНОВКА ──────────────────────
 #
-# Репозиторий едет в ISO (build.sh кладёт его в airootfs/opt/pzhavos-repo),
+# Репозиторий едет в ISO (build.sh кладёт его в airootfs/opt/ouvert-repo),
 # поэтому в ЖИВОЙ системе он доступен как обычный каталог.
 #
 # Как это работает (проверено по исходникам archinstall 4.4):
-#   guided.py:101  set_mirrors(on_target=False) -> дописывает [pzhavos]
+#   guided.py:101  set_mirrors(on_target=False) -> дописывает [ouvert]
 #                  в pacman.conf ЖИВОЙ системы;
 #   pacman.py:111  pacstrap -C /etc/pacman.conf -> ВСЕГДА конфиг живой
 #                  системы, и для base, и для add_additional_packages,
 #                  значит наши пакеты видны;
 #   installer.py:953 PacmanConfig.persist() -> КОПИРУЕТ живой pacman.conf
-#                  в цель целиком (вместе с [pzhavos]);
-#   guided.py:112  set_mirrors(on_target=True) -> дописывает [pzhavos]
+#                  в цель целиком (вместе с [ouvert]);
+#   guided.py:112  set_mirrors(on_target=True) -> дописывает [ouvert]
 #                  в цель ВТОРОЙ раз.
-# Итог: в целевом pacman.conf два блока [pzhavos] с путём file:///opt/...,
+# Итог: в целевом pacman.conf два блока [ouvert] с путём file:///opt/...,
 # которого после перезагрузки не существует. Поэтому build_custom_commands
 # ОБЯЗАН вычистить секцию — иначе у юзера падает pacman -Syu.
-REPO_NAME = "pzhavos"
-REPO_DIR = "/opt/pzhavos-repo/x86_64"
+REPO_NAME = "ouvert"
+REPO_DIR = "/opt/ouvert-repo/x86_64"
 REPO_URL = f"file://{REPO_DIR}"
 
 # Пакеты не подписаны -> SigLevel = Never TrustAll.
@@ -754,12 +753,9 @@ CUSTOM_REPOS = [
 PACKAGES = [
     # наш репозиторий
     "ungoogled-chromium-bin",  # conflicts=('chromium') — обычный chromium НЕ добавлять
-    "v2raya",
-    "zapret2",
     "protonup-qt",
     "paru",
-    "pzhavmem",
-    "pzhavos-branding",  # этап 3: обои, лого, конфиг fastfetch
+    "ouvert-branding",  # этап 3: обои, лого, конфиг fastfetch
     "os-prober",  # bug 25: обнаружение второй ОС (Windows) для меню GRUB
     # официальные репозитории
     "kitty",
@@ -770,7 +766,6 @@ PACKAGES = [
     "git",
     "flatpak",
     "dconf",  # чтобы dconf update скомпилил заглушку gdm-лого даже без gdm
-    "ipset",  # optdepends zapret2: нужен для режима iptables
 ]
 
 # Требуют multilib. Если юзер снял галку — steam просто не поставится,
@@ -792,7 +787,7 @@ def build_config(state: dict) -> dict:
     return {
         "version": "4.4",
         "archinstall-language": "English",
-        "hostname": state.get("hostname") or "pzhavos",
+        "hostname": state.get("hostname") or "ouvert",
         "kernels": KERNEL_SETS.get(state.get("kernel") or "linux", ["linux"]),
         # removable=True — fallback /EFI/BOOT/BOOTX64.EFI. Баг 7: без него
         # система не грузится после сброса NVRAM. В v3 стояло False.

@@ -43,7 +43,7 @@ _STAGE_HINTS = (
 # arch-chroot (команда) — в них пробела нет. Три строки, которые это чинит,
 # сняты с живого лога t24: Fetching / keyring sync / NTP servers.
 _BRAND_SRC = "Arch Linux"
-_BRAND_DST = "PzhavOS"
+_BRAND_DST = "Ouvert Linux"
 _RE_BRAND = re.compile(r"\bArch Linux\b")
 
 
@@ -330,11 +330,13 @@ class TimezonePage(BasePage):
         form.addRow(self.l_city, self.city_combo)
         self.body.addLayout(form)
 
-        tz = self.state.get("timezone") or "Europe/Moscow"
+        # ничего не выбрано заранее: пояс выбирают осознанно
+        self.region_combo.setCurrentIndex(-1)
+        self.city_combo.setEnabled(False)
+        tz = self.state.get("timezone") or ""
         region, _, city = tz.partition("/")
         if region in self.regions:
             self.region_combo.setCurrentText(region)
-            self._fill_cities(region)
             if city in self.regions[region]:
                 self.city_combo.setCurrentText(city)
         self.retranslate()
@@ -342,22 +344,32 @@ class TimezonePage(BasePage):
     def _fill_cities(self, region: str) -> None:
         self.city_combo.clear()
         self.city_combo.addItems(self.regions.get(region, []))
+        self.city_combo.setCurrentIndex(-1)
+        self.city_combo.setEnabled(bool(region))
+        self.state.pop("timezone", None)
 
     def _store(self, city: str) -> None:
         if city:
             self.state["timezone"] = f"{self.region_combo.currentText()}/{city}"
 
+    def validate(self) -> str | None:
+        if not self.state.get("timezone"):
+            return tr("err_no_tz")
+        return None
+
     def retranslate(self) -> None:
         self.title.setText(tr("tz_title"))
         self.l_region.setText(tr("tz_region"))
         self.l_city.setText(tr("tz_city"))
+        self.region_combo.setPlaceholderText(tr("tz_pick_region"))
+        self.city_combo.setPlaceholderText(tr("tz_pick_city"))
 
 
 class DiskPage(BasePage):
     def __init__(self, state: dict):
         super().__init__(state)
         self.warn = QLabel()
-        self.warn.setStyleSheet("color: #c67573; font-weight: 600;")
+        self.warn.setObjectName("warning")
         self.refresh_btn = QPushButton()
         self.refresh_btn.clicked.connect(self.refresh)
         self.empty = QLabel()
@@ -447,7 +459,7 @@ class UserPage(BasePage):
         self.password.setEchoMode(QLineEdit.EchoMode.Password)
         self.password2 = QLineEdit()
         self.password2.setEchoMode(QLineEdit.EchoMode.Password)
-        self.hostname = QLineEdit(self.state.get("hostname", "pzhavos"))
+        self.hostname = QLineEdit(self.state.get("hostname", "ouvert"))
 
         for w in (self.username, self.password, self.password2, self.hostname):
             w.setFixedWidth(320)
@@ -668,8 +680,8 @@ class ProgressPage(BasePage):
         self.bar.show()
         self.stage.setText(tr("stage_prepare"))
         self.stage.show()
-        Path("/tmp/pzhavos").mkdir(parents=True, exist_ok=True)
-        self._logfile = open("/tmp/pzhavos/install.log", "a", encoding="utf-8")
+        Path("/tmp/ouvert").mkdir(parents=True, exist_ok=True)
+        self._logfile = open("/tmp/ouvert/install.log", "a", encoding="utf-8")
 
         self.proc = QProcess(self)
         env = QProcessEnvironment.systemEnvironment()
