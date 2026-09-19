@@ -1,1 +1,0 @@
-/home/admin/pzhavos/pkgbuilds/pzhavos-branding/README-zapret2.txt

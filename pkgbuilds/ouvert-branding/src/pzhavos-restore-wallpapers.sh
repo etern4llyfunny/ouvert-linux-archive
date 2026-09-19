@@ -1,1 +1,0 @@
-/home/admin/pzhavos/pkgbuilds/pzhavos-branding/pzhavos-restore-wallpapers.sh

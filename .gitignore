@@ -12,3 +12,9 @@ iso/wm/dwm/
 iso/wm/slstatus/
 backups/
 *bak*
+iso/profile/airootfs/opt/*-repo/
+pkgbuilds/*/pkg/
+pkgbuilds/*/src/
+pkgbuilds/*/*.pkg.tar.zst
+pkgbuilds/*/*.log
+stand/*.img
