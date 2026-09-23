@@ -285,18 +285,25 @@ def build_custom_commands(state: dict) -> list[str]:
         "https://dl.flathub.org/repo/flathub.flatpakrepo || true\n"
     )
 
-    # DuckDuckGo как поисковик по умолчанию в ungoogled-chromium.
-    # ungoogled ВЫПИЛИ дефолтные движки -> обычные preferences не помогут.
-    # Рабочий путь - enterprise policy managed. Движок ПРИНУДИТЕЛЬНЫЙ.
+    # DuckDuckGo как поисковик по умолчанию в Waterfox.
+    # Waterfox — форк Firefox ESR: поисковик задаётся enterprise-политикой
+    # (policies.json), обычные preferences его не переключают.
+    # ВАЖНО: /etc/waterfox/policies/policies.json перекрывает пакетный
+    # /opt/waterfox/distribution/policies.json ЦЕЛИКОМ, поэтому ключи
+    # AppAutoUpdate/ManualAppUpdateOnly продублированы здесь — без них
+    # Waterfox полезет обновлять сам себя в /opt и будет ругаться.
     cmds.append(
         "set -e\n"
-        "mkdir -p /etc/chromium/policies/managed\n"
-        "cat > /etc/chromium/policies/managed/ouvert-search.json <<'DDGEOF'\n"
+        "mkdir -p /etc/waterfox/policies\n"
+        "cat > /etc/waterfox/policies/policies.json <<'DDGEOF'\n"
         '{\n'
-        '  "DefaultSearchProviderEnabled": true,\n'
-        '  "DefaultSearchProviderName": "DuckDuckGo",\n'
-        '  "DefaultSearchProviderSearchURL": "https://duckduckgo.com/?q={searchTerms}",\n'
-        '  "DefaultSearchProviderSuggestURL": "https://duckduckgo.com/ac/?q={searchTerms}&type=list"\n'
+        '  "policies": {\n'
+        '    "AppAutoUpdate": false,\n'
+        '    "ManualAppUpdateOnly": true,\n'
+        '    "SearchEngines": {\n'
+        '      "Default": "DuckDuckGo"\n'
+        '    }\n'
+        '  }\n'
         '}\n'
         "DDGEOF\n"
     )
@@ -385,14 +392,15 @@ def build_custom_commands(state: dict) -> list[str]:
         "    cp -f /usr/share/wallpapers/Ouvert/ouvert.png \"$f\" || true\n"
         "  done\n"
         "fi\n"
-        # KDE Plasma: свои обои ouvert-kde.png. Дефолт в Plasma без правки
+        # KDE Plasma: те же ouvert.png (отдельные KDE-обои выброшены Патчем 60,
+        # Bug 58: cp молча падал на || true). Дефолт в Plasma без правки
         # конфига под монитор не задать, поэтому подменяем содержимое
         # ДЕФОЛТНОГО набора Next (пакет plasma-workspace-wallpapers): новый
         # юзер получает Next -> видит наш фон. Есть только если KDE стоит.
         # Все разрешения + images_dark, чтобы фон был на любой теме. Проверено t14.
         "if [ -d /usr/share/wallpapers/Next/contents ]; then\n"
         "  for f in /usr/share/wallpapers/Next/contents/images/*.png /usr/share/wallpapers/Next/contents/images_dark/*.png; do\n"
-        "    cp -f /usr/share/wallpapers/Ouvert/ouvert-kde.png \"$f\" || true\n"
+        "    cp -f /usr/share/wallpapers/Ouvert/ouvert.png \"$f\" || true\n"
         "  done\n"
         "fi\n"
         # ★ Bug 47 cosmic: обои COSMIC.
@@ -752,7 +760,7 @@ CUSTOM_REPOS = [
 # Предустановка. Из нашего репо приедут и зависимости (python-steam и др.).
 PACKAGES = [
     # наш репозиторий
-    "ungoogled-chromium-bin",  # conflicts=('chromium') — обычный chromium НЕ добавлять
+    "waterfox-bin",  # AUR, epoch 1; conflicts=('waterfox'), ставит /opt/waterfox
     "protonup-qt",
     "paru",
     "ouvert-branding",  # этап 3: обои, лого, конфиг fastfetch
@@ -764,6 +772,7 @@ PACKAGES = [
     "cmatrix",
     "cava",
     "git",
+    "base-devel",  # Bug 61: без него paru не собирает AUR (нет fakeroot)
     "flatpak",
     "dconf",  # чтобы dconf update скомпилил заглушку gdm-лого даже без gdm
 ]

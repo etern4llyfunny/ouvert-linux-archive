@@ -4,7 +4,7 @@
 """
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QProcess, Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
@@ -27,6 +27,11 @@ LIVE_MARKER = Path("/run/archiso")
 class InstallerWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        # Патч 62: без рамки — кнопок свернуть/развернуть/закрыть нет
+        # физически. В COSMIC (Wayland) декорации рисует композитор, и
+        # убрать ОДНУ кнопку протокол не позволяет — только всю рамку.
+        # Alt+F4 рамку не спрашивает, его ловит closeEvent ниже.
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
         self.state: dict = {
             "lang": "ru",
             "username": "",
@@ -267,3 +272,26 @@ class InstallerWindow(QMainWindow):
         for p in self.pages:
             p.retranslate()
         self.update_nav()
+
+    def closeEvent(self, event) -> None:
+        """Патч 62. Кнопок у окна нет, но Alt+F4 и «Закрыть» из панели
+        задач всё равно присылают запрос на закрытие."""
+        proc = self.progress.proc
+        if proc is not None and proc.state() != QProcess.ProcessState.NotRunning:
+            # оборванный archinstall оставляет диск полуразмеченным
+            QMessageBox.warning(self, "Ouvert Linux", tr("close_busy"))
+            event.ignore()
+            return
+        if self.stack.currentIndex() == self.progress_index:
+            event.accept()  # установка закончилась — держать незачем
+            return
+        box = QMessageBox(QMessageBox.Icon.Question, "Ouvert Linux",
+                          tr("close_ask"), parent=self)
+        box.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+        yes = box.addButton(tr("close_yes"), QMessageBox.ButtonRole.AcceptRole)
+        box.setDefaultButton(
+            box.addButton(tr("pe_cancel"), QMessageBox.ButtonRole.RejectRole)
+        )
+        box.exec()
+        if box.clickedButton() is not yes:
+            event.ignore()

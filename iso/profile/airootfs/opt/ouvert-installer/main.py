@@ -23,7 +23,9 @@ def main() -> int:
     win.show()
 
     if "--smoke-test" in sys.argv:
-        QTimer.singleShot(300, app.quit)
+        # exit, а не quit: в Qt 6 quit() шлёт окнам close, а closeEvent
+        # спрашивает «Выйти?» — смоук-тест повис бы на диалоге (Патч 62).
+        QTimer.singleShot(300, app.exit)
 
     return app.exec()
 

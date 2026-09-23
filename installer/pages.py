@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from desktops import DESKTOP_ENVIRONMENTS, WINDOW_MANAGERS
 from i18n import current_lang, set_lang, tr
+from theme import C
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -205,7 +206,7 @@ class NetworkPage(BasePage):
             self._fill_devices()
 
     def _set_status(self, text: str, ok: bool | None = None) -> None:
-        color = {True: "#5fd3c8", False: "#c67573", None: "#a0a0a0"}[ok]
+        color = {True: C["blue"], False: C["coral"], None: C["muted"]}[ok]
         self.status.setText(text)
         self.status.setStyleSheet(f"color: {color}; font-weight: 600;")
 
@@ -621,7 +622,7 @@ class SummaryPage(BasePage):
             (tr("kern_label"), s.get("kernel_desc") or ns),
         ]
         html = "".join(
-            f"<p style='margin:6px 0'><span style='color:#c67573'>{k}:</span> {v}</p>"
+            f"<p style='margin:6px 0'><span style='color:{C['muted']}'>{k}:</span> {v}</p>"
             for k, v in rows
         )
         self.text.setText(html)
@@ -653,11 +654,11 @@ class ProgressPage(BasePage):
         self.bar.setRange(0, 0)          # 0,0 = бесконечная бегущая полоса
         self.bar.setFixedHeight(10)
         self.bar.setStyleSheet(
-            "QProgressBar { background: #2b2b2b; border: none; border-radius: 5px; }"
-            "QProgressBar::chunk { background: #4a9d94; border-radius: 5px; }"
+            f"QProgressBar {{ background: {C['line']}; border: none; border-radius: 5px; }}"
+            f"QProgressBar::chunk {{ background: {C['blue']}; border-radius: 5px; }}"
         )
         self.stage = QLabel()
-        self.stage.setStyleSheet("color: #9aa0a6;")
+        self.stage.setObjectName("muted")
         self.bar.hide()
         self.stage.hide()
 

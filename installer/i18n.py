@@ -9,6 +9,17 @@ STRINGS = {
     "install": {"ru": "Установить", "en": "Install"},
     "step": {"ru": "Шаг", "en": "Step"},
 
+    # --- Патч 62: закрытие окна ---
+    "close_ask": {"ru": "Выйти из установщика? Система не будет установлена.",
+                  "en": "Quit the installer? The system will not be installed."},
+    "close_yes": {"ru": "Выйти", "en": "Quit"},
+    "close_busy": {
+        "ru": "Идёт установка — закрыть установщик сейчас нельзя.\n"
+              "Прерванная установка оставит диск наполовину размеченным.",
+        "en": "Installation is running — the installer cannot be closed now.\n"
+              "An interrupted install leaves the disk half-partitioned.",
+    },
+
     "welcome_title": {"ru": "Добро пожаловать в установщик Ouvert Linux!", "en": "Welcome to the Ouvert Linux installer!"},
     "welcome_text": {
         "ru": "Пара простых шагов — и система готова.\nВыбери язык установки:",

@@ -18,3 +18,4 @@ pkgbuilds/*/src/
 pkgbuilds/*/*.pkg.tar.zst
 pkgbuilds/*/*.log
 stand/*.img
+repo/x86_64/*.old
