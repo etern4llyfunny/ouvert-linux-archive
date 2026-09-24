@@ -2,15 +2,17 @@
 
 ВЕРСИЯ: v4 — добавлена страница «Разметка» (11 страниц).
 """
+import sys
 from pathlib import Path
 
-from PySide6.QtCore import QProcess, Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QProcess, QRect, QSize, Qt
+from PySide6.QtGui import QGuiApplication, QPixmap
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
     QStackedWidget, QVBoxLayout, QWidget,
 )
 
+import overlay
 from config_gen import write_configs
 from i18n import tr
 from pages import (
@@ -130,16 +132,59 @@ class InstallerWindow(QMainWindow):
         nav.addStretch()
         nav.addWidget(self.btn_next)
 
-        root = QWidget()
-        v = QVBoxLayout(root)
-        v.setContentsMargins(0, 0, 0, 0)
+        # Патч 63: панель — ребёнок пустого центрального виджета, ставится
+        # вручную в _place(). Под cage окно растянуто на все мониторы
+        # (Bug 57), сдвинуть окно Wayland-клиент не может — только нарисовать
+        # себя в нужном прямоугольнике.
+        outer = QWidget()
+        self.panel = QWidget(outer)
+        self.panel.setObjectName("panel")
+        self.panel.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        v = QVBoxLayout(self.panel)
+        v.setContentsMargins(1, 1, 1, 1)  # рамка панели из theme.py
         v.setSpacing(0)
         v.addWidget(header)
         v.addWidget(self.stack, 1)
         v.addLayout(nav)
-        self.setCentralWidget(root)
+        self.setCentralWidget(outer)
+        self.area = QRect()      # прямоугольник выбранного экрана, для overlay
+        overlay.HOST = self      # диалоги — внутрь окна (overlay.py)
 
         self.retranslate_all()
+
+    # --- Патч 63: геометрия ---
+    PANEL = QSize(920, 640)  # под этот размер свёрстаны все страницы
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._place()
+
+    def _place(self) -> None:
+        """Панель — в прямоугольник одного экрана, по центру, не больше PANEL."""
+        self.area = self.centralWidget().rect()
+        screens = QGuiApplication.screens()
+        if len(screens) > 1 and (
+            self.width() > max(s.geometry().width() for s in screens)
+            or self.height() > max(s.geometry().height() for s in screens)
+        ):
+            # окно больше любого экрана — cage растянул его на все (extend).
+            # Экран: больше пикселей → больше дюймов → первый по списку.
+            box = QRect()
+            for s in screens:
+                box = box.united(s.geometry())
+            best = max(screens, key=lambda s: (
+                s.geometry().width() * s.geometry().height(),
+                s.physicalSize().width() * s.physicalSize().height(),
+            ))
+            self.area = best.geometry().translated(-box.topLeft())
+            print(f"ouvert: окно {self.width()}x{self.height()}, экраны "
+                  + ", ".join(f"{s.name()} {s.geometry().getRect()}" for s in screens)
+                  + f" -> {best.name()}", file=sys.stderr)
+        size = self.PANEL.boundedTo(self.area.size())
+        a = self.area
+        self.panel.setGeometry(a.x() + (a.width() - size.width()) // 2,
+                               a.y() + (a.height() - size.height()) // 2,
+                               size.width(), size.height())
 
     # --- логика ---
     def _validate_disk(self) -> str | None:
@@ -219,11 +264,11 @@ class InstallerWindow(QMainWindow):
     def _start_install(self) -> None:
         err = self._validate()
         if err:
-            QMessageBox.warning(self, "Ouvert Linux", err)
+            overlay.say(self, "Ouvert Linux", err)
             return
         cfg, creds = write_configs(self.state)
         if not LIVE_MARKER.exists():
-            QMessageBox.information(self, "Ouvert Linux", tr("not_live"))
+            overlay.say(self, "Ouvert Linux", tr("not_live"), QMessageBox.Icon.Information)
             return
         self.btn_back.hide()
         self.btn_next.hide()
@@ -239,16 +284,16 @@ class InstallerWindow(QMainWindow):
         if delta > 0:
             page = self.pages[i]
             if (check := getattr(page, "validate", None)) and (err := check()):
-                QMessageBox.warning(self, "Ouvert Linux", err)
+                overlay.say(self, "Ouvert Linux", err)
                 return
             if page is self.net_page and not self.state.get("net_ok"):
-                QMessageBox.warning(self, "Ouvert Linux", tr("err_no_net"))
+                overlay.say(self, "Ouvert Linux", tr("err_no_net"))
                 return
             if isinstance(page, DiskPage) and (err := self._validate_disk()):
-                QMessageBox.warning(self, "Ouvert Linux", err)
+                overlay.say(self, "Ouvert Linux", err)
                 return
             if isinstance(page, PartitioningPage) and (err := self._validate_part()):
-                QMessageBox.warning(self, "Ouvert Linux", err)
+                overlay.say(self, "Ouvert Linux", err)
                 return
             if i == self.summary_index:
                 self._start_install()
@@ -279,7 +324,7 @@ class InstallerWindow(QMainWindow):
         proc = self.progress.proc
         if proc is not None and proc.state() != QProcess.ProcessState.NotRunning:
             # оборванный archinstall оставляет диск полуразмеченным
-            QMessageBox.warning(self, "Ouvert Linux", tr("close_busy"))
+            overlay.say(self, "Ouvert Linux", tr("close_busy"))
             event.ignore()
             return
         if self.stack.currentIndex() == self.progress_index:
@@ -292,6 +337,6 @@ class InstallerWindow(QMainWindow):
         box.setDefaultButton(
             box.addButton(tr("pe_cancel"), QMessageBox.ButtonRole.RejectRole)
         )
-        box.exec()
+        overlay.run(box)
         if box.clickedButton() is not yes:
             event.ignore()

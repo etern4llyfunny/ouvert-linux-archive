@@ -28,6 +28,8 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QVBoxLayout,
 )
 
+import overlay
+
 import diskmap
 import partops
 from i18n import tr
@@ -407,7 +409,7 @@ class PartitionEditor(QDialog):
 
     # --- операции записи (сессия 4) ---
     def _fail(self, exc):
-        QMessageBox.critical(self, tr("pe_err_title"), str(exc))
+        overlay.say(self, tr("pe_err_title"), str(exc), QMessageBox.Icon.Critical)
 
     def _after_write(self, msg):
         """Кэши protection_map/esp_free после записи ВРУТ — сбросить.
@@ -428,7 +430,7 @@ class PartitionEditor(QDialog):
         живой системы, и предлагать новичку MBR под UEFI — это предлагать
         ему несовместимую с загрузкой конфигурацию."""
         if not self.can_write:
-            QMessageBox.warning(self, tr("pe_err_title"),
+            overlay.say(self, tr("pe_err_title"),
                                 tr("pe_ro") % self.why_ro)
             return
         try:
@@ -454,7 +456,7 @@ class PartitionEditor(QDialog):
         # Bug 45: по умолчанию — НЕ создавать. Операция разрушительнее
         # удаления раздела, а там setDefaultButton стоит с сессии 4.
         box.setDefaultButton(no)
-        box.exec()
+        overlay.run(box)
         if box.clickedButton() is not yes:
             return
 
@@ -475,7 +477,7 @@ class PartitionEditor(QDialog):
             return
         ok, why = diskmap.can_delete(it, self.ctx)
         if not ok:
-            QMessageBox.warning(self, tr("pe_err_title"),
+            overlay.say(self, tr("pe_err_title"),
                                 tr("pe_cant_delete") % why)
             return
 
@@ -491,7 +493,7 @@ class PartitionEditor(QDialog):
                             QMessageBox.ButtonRole.DestructiveRole)
         no = box.addButton(tr("pe_cancel"), QMessageBox.ButtonRole.RejectRole)
         box.setDefaultButton(no)        # по умолчанию — НЕ удалять
-        box.exec()
+        overlay.run(box)
         if box.clickedButton() is not yes:
             return
 
@@ -517,7 +519,7 @@ class PartitionEditor(QDialog):
         if it is None or it["kind"] != "free":
             return
         dlg = CreateDialog(it, self)
-        if dlg.exec() != QDialog.DialogCode.Accepted:
+        if overlay.run(dlg) != QDialog.DialogCode.Accepted:
             return
         size, fs = dlg.result_size, dlg.result_fs
 

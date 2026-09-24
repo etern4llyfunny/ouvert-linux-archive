@@ -77,6 +77,11 @@ QProgressBar::chunk {{ background: {C["blue"]}; border-radius: 5px; }}
 
 QRadioButton {{ padding: 4px 2px; background: transparent; }}
 QScrollArea {{ border: none; }}
+
+/* Патч 63: панель установщика и диалоги внутри окна (overlay.py) */
+QWidget#panel {{ border: 1px solid {C["line"]}; }}
+QWidget#scrim {{ background: rgba(0, 0, 0, 150); }}
+QWidget#scrim > QDialog {{ border: 1px solid {C["line"]}; border-radius: 8px; }}
 """
 
 

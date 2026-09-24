@@ -479,17 +479,18 @@ class PartitioningPage(BasePage):
         Импорты локальные: если partedit.py не уехал в сборку, страница
         разметки обязана продолжать работать, а не падать на импорте.
         """
+        import overlay
         from PySide6.QtWidgets import QMessageBox
         disk = self.state.get("disk")
         if not disk:
-            QMessageBox.warning(self, tr("part_title"), tr("err_no_disk"))
+            overlay.say(self, tr("part_title"), tr("err_no_disk"))
             return
         try:
             from partedit import PartitionEditor
         except Exception as exc:
-            QMessageBox.critical(self, tr("part_title"), f"partedit: {exc}")
+            overlay.say(self, tr("part_title"), f"partedit: {exc}", QMessageBox.Icon.Critical)
             return
-        PartitionEditor(disk, self).exec()
+        overlay.run(PartitionEditor(disk, self))
         # Перечитать разделы: назначения переживут это благодаря Bug 24.
         self._reload_parts()
 
