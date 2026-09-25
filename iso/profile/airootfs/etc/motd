@@ -2,7 +2,7 @@ Ouvert Linux live environment.
 
 The installer starts automatically on tty1.
 If it did not, run it manually:
-    python /opt/ouvert-installer/main.py --live
+    ouvert
 
 Network:
     Wi-Fi ............ iwctl
