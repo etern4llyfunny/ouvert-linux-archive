@@ -51,7 +51,7 @@ class InstallerWindow(QMainWindow):
             "gfx": "All open-source",
             "repos": ["multilib"],
             "kb": "us_ru",
-            "kernel": "linux",
+            "kernel": "ouvert",
             # --- v4: разметка ---
             "part_mode": "wipe",       # wipe | manual
             "part_desc": "",

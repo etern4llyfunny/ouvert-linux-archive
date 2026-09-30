@@ -88,11 +88,13 @@ def map_lsblk_fs(fstype: str, fsver: str = "") -> str:
     return ""
 
 # Kernel из lib/models/package_types.py 4.4. Других значений нет.
+# Патч 65: linux-ouvert нет в enum Kernel, но args.py:328 берёт kernels
+# как есть; kernels[0] = ядро по умолчанию в загрузчике (installer.py:1300).
 KERNEL_SETS = {
+    "ouvert": ["linux-ouvert"],
+    "ouvert+lts": ["linux-ouvert", "linux-lts"],
     "linux": ["linux"],
     "linux-lts": ["linux-lts"],
-    "linux+lts": ["linux", "linux-lts"],
-    "linux-zen": ["linux-zen"],
 }
 
 # kb_layout проверяется через verify_keyboard_layout() -> localectl list-keymaps.
@@ -797,7 +799,7 @@ def build_config(state: dict) -> dict:
         "version": "4.4",
         "archinstall-language": "English",
         "hostname": state.get("hostname") or "ouvert",
-        "kernels": KERNEL_SETS.get(state.get("kernel") or "linux", ["linux"]),
+        "kernels": KERNEL_SETS.get(state.get("kernel") or "ouvert", ["linux-ouvert"]),
         # removable=True — fallback /EFI/BOOT/BOOTX64.EFI. Баг 7: без него
         # система не грузится после сброса NVRAM. В v3 стояло False.
         "bootloader_config": {"bootloader": "Grub", "uki": False, "removable": True},

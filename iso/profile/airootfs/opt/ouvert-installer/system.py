@@ -19,12 +19,12 @@ from pages import ReposPage, TimezonePage
 KB_CHOICES = ["us_ru", "us", "ru"]
 KB_KEYS = {"us_ru": "kb_us_ru", "us": "kb_us", "ru": "kb_ru"}
 
-KERNEL_CHOICES = ["linux", "linux+lts", "linux-lts", "linux-zen"]
+KERNEL_CHOICES = ["ouvert", "ouvert+lts", "linux", "linux-lts"]
 KERNEL_KEYS = {
+    "ouvert": "kern_ouvert",
+    "ouvert+lts": "kern_both",
     "linux": "kern_linux",
-    "linux+lts": "kern_both",
     "linux-lts": "kern_lts",
-    "linux-zen": "kern_zen",
 }
 
 
@@ -83,7 +83,7 @@ class RegionPage(TimezonePage):
 class AdvancedPage(ReposPage):
     def __init__(self, state: dict):
         super().__init__(state)
-        state.setdefault("kernel", "linux")
+        state.setdefault("kernel", "ouvert")
 
         form = QFormLayout()
         form.setHorizontalSpacing(16)
@@ -124,6 +124,6 @@ class AdvancedPage(ReposPage):
         self.l_kern.setText(tr("kern_label"))
         for i, key in enumerate(KERNEL_CHOICES):
             self.kern_combo.setItemText(i, tr(KERNEL_KEYS[key]))
-        pkgs = " + ".join(KERNEL_SETS.get(self.state.get("kernel") or "linux", ["linux"]))
+        pkgs = " + ".join(KERNEL_SETS.get(self.state.get("kernel") or "ouvert", ["linux-ouvert"]))
         self.kern_note.setText(f'{tr("kern_note")}\n{tr("kern_pkgs")}: {pkgs}')
         self.state["kernel_desc"] = pkgs

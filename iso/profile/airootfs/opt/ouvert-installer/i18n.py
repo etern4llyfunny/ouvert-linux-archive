@@ -287,13 +287,13 @@ STRINGS = {
     "repo_title": {"ru": "Дополнительные репозитории", "en": "Additional repositories"},
     "adv_title": {"ru": "Ядро и репозитории", "en": "Kernel & repositories"},
     "kern_label": {"ru": "Ядро Linux", "en": "Linux kernel"},
-    "kern_linux": {"ru": "linux — обычное, свежее", "en": "linux — regular, latest"},
-    "kern_both": {"ru": "linux + linux-lts — запасное в меню GRUB", "en": "linux + linux-lts — fallback in GRUB menu"},
+    "kern_ouvert": {"ru": "linux-ouvert — родное, CachyOS + BORE", "en": "linux-ouvert — native, CachyOS + BORE"},
+    "kern_linux": {"ru": "linux — ванильное арчевское", "en": "linux — vanilla Arch"},
+    "kern_both": {"ru": "linux-ouvert + lts — запасное в GRUB", "en": "linux-ouvert + lts — GRUB fallback"},
     "kern_lts": {"ru": "linux-lts — долгоживущее, для старого железа", "en": "linux-lts — long-term, for older hardware"},
-    "kern_zen": {"ru": "linux-zen — отзывчивее, но капризнее", "en": "linux-zen — snappier, but fussier"},
     "kern_note": {
-        "ru": "Не уверен — оставь обычное. «linux + linux-lts» даёт второй пункт\nв меню загрузки: если новое ядро сломается, загрузишься со старого.",
-        "en": "Not sure — keep the regular one. “linux + linux-lts” adds a second\nboot menu entry: if the new kernel breaks, boot the old one.",
+        "ru": "Не уверен — оставь linux-ouvert. «+ lts» даёт второй пункт\nв меню загрузки: если основное ядро сломается, загрузишься с запасного.",
+        "en": "Not sure — keep linux-ouvert. “+ lts” adds a second\nboot menu entry: if the main kernel breaks, boot the fallback.",
     },
     "kern_pkgs": {"ru": "Пакеты", "en": "Packages"},
     "repo_multilib_note": {
