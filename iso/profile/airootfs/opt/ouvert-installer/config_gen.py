@@ -329,8 +329,9 @@ def build_custom_commands(state: dict) -> list[str]:
         # (пакет ouvert-branding), pixmaps — штатный fallback поиска иконок.
         "LOGO=ouvert\n"
         "OSREOF\n"
-        # GRUB: имя в пунктах меню + фоновая картинка.
-        "sed -i 's|^#\\?GRUB_DISTRIBUTOR=.*|GRUB_DISTRIBUTOR=\"Ouvert Linux\"|' /etc/default/grub\n"
+        # GRUB: имя в пунктах меню + фоновая картинка. 10_linux сам
+        # дописывает " Linux" к GRUB_DISTRIBUTOR (Bug 66: было «Ouvert Linux Linux»).
+        "sed -i 's|^#\\?GRUB_DISTRIBUTOR=.*|GRUB_DISTRIBUTOR=\"Ouvert\"|' /etc/default/grub\n"
         "grep -q '^GRUB_BACKGROUND=' /etc/default/grub"
         " && sed -i 's|^GRUB_BACKGROUND=.*|GRUB_BACKGROUND=\"/usr/share/ouvert/grub-bg.png\"|' /etc/default/grub"
         " || echo 'GRUB_BACKGROUND=\"/usr/share/ouvert/grub-bg.png\"' >> /etc/default/grub\n"
@@ -341,6 +342,11 @@ def build_custom_commands(state: dict) -> list[str]:
         "grep -q '^GRUB_DISABLE_OS_PROBER=' /etc/default/grub"
         " && sed -i 's|^GRUB_DISABLE_OS_PROBER=.*|GRUB_DISABLE_OS_PROBER=false|' /etc/default/grub"
         " || echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub\n"
+        # Bug 67: 31_efi_bootnext (grub >= 2.16) тащит в меню записи NVRAM
+        # как «… (EFI BootNext)». Штатный рубильник, переживает обновления grub.
+        "grep -q '^GRUB_DISABLE_BOOTNEXT=' /etc/default/grub"
+        " && sed -i 's|^GRUB_DISABLE_BOOTNEXT=.*|GRUB_DISABLE_BOOTNEXT=true|' /etc/default/grub"
+        " || echo 'GRUB_DISABLE_BOOTNEXT=true' >> /etc/default/grub\n"
         "grub-mkconfig -o /boot/grub/grub.cfg\n"
     )
 
@@ -414,17 +420,16 @@ def build_custom_commands(state: dict) -> list[str]:
         # Условие по каталогу, а не по выбору DE в GUI: юзер мог доставить
         # COSMIC вторым столом. Та же логика, что у блока Next выше.
         # Схема RON снята с живого cosmic-bg 1:1.5.0-1, не выдумана.
-        "if [ -d /usr/share/cosmic ] && [ -f /etc/skel/.config/cosmic/com.system76.CosmicBackground/v1/all ]; then\n"
+        # Bug 65 (Патч 66.4): копируем ВСЁ дерево skel cosmic, а не поштучно —
+        # иначе каждый новый skel-файл (military_time) надо было не забыть
+        # прописать здесь. --update=none: существующие файлы юзера не трогаем.
+        "if [ -d /usr/share/cosmic ] && [ -d /etc/skel/.config/cosmic ]; then\n"
         "  for h in /home/*; do\n"
         "    [ -d \"$h\" ] || continue\n"
         "    u=$(basename \"$h\")\n"
-        "    d=\"$h/.config/cosmic/com.system76.CosmicBackground/v1\"\n"
-        "    if [ ! -e \"$d/all\" ]; then\n"
-        "      mkdir -p \"$d\"\n"
-        "      cp /etc/skel/.config/cosmic/com.system76.CosmicBackground/v1/all \"$d/\" || true\n"
-        "      cp /etc/skel/.config/cosmic/com.system76.CosmicBackground/v1/backgrounds \"$d/\" || true\n"
-        "      chown -R \"$u:$u\" \"$h/.config\" 2>/dev/null || true\n"
-        "    fi\n"
+        "    mkdir -p \"$h/.config\"\n"
+        "    cp -r --update=none /etc/skel/.config/cosmic \"$h/.config/\" || true\n"
+        "    chown -R \"$u:$u\" \"$h/.config\" 2>/dev/null || true\n"
         "  done\n"
         "fi\n"
         # fastfetch при открытии терминала. /etc/skel/.bashrc принадлежит

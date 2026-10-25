@@ -1,7 +1,7 @@
 # Maintainer: dispaly
 pkgname=ouvert-branding
 pkgver=1.0
-pkgrel=6
+pkgrel=7
 pkgdesc="Оформление Ouvert Linux: обои, логотип, конфиг fastfetch"
 arch=('any')
 url="https://example.com/ouvert"
@@ -20,8 +20,10 @@ source=('ouvert.png'
         'ouvert-restore-wallpapers.sh'
         'cosmic-bg-all'
         'cosmic-bg-backgrounds'
+        'cosmic-time-military'
         'LICENSE')
 sha256sums=('SKIP'
+            'SKIP'
             'SKIP'
             'SKIP'
             'SKIP'
@@ -58,6 +60,8 @@ package() {
     # здесь не нужен: чужих файлов не трогаем, восстанавливать нечего.
     install -Dm644 "$srcdir/cosmic-bg-all" "$pkgdir/etc/skel/.config/cosmic/com.system76.CosmicBackground/v1/all"
     install -Dm644 "$srcdir/cosmic-bg-backgrounds" "$pkgdir/etc/skel/.config/cosmic/com.system76.CosmicBackground/v1/backgrounds"
+    # Bug 65 (Патч 66): 24-часовые часы в панели; дефолт апплета в бинаре = 12h
+    install -Dm644 "$srcdir/cosmic-time-military" "$pkgdir/etc/skel/.config/cosmic/com.system76.CosmicAppletTime/v1/military_time"
 
     # pacman-хук: обновление xfdesktop / plasma-workspace-wallpapers
     # затирает наши обои штатными. Триггер ПО ПУТЯМ, а не по имени
