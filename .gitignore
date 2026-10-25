@@ -19,4 +19,4 @@ pkgbuilds/*/*.pkg.tar.zst
 pkgbuilds/*/*.log
 stand/*.img
 repo/x86_64/*.old
-repo/x86_64/linux-ouvert*.pkg.tar.zst
+repo/x86_64/*.pkg.tar.zst*
