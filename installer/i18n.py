@@ -394,13 +394,13 @@ STRINGS = {
 
     # --- v9: индикатор этапа установки ---
     "stage_prepare": {"ru": "Подготовка…", "en": "Preparing…"},
-    "stage_db": {"ru": "Обновляю базу пакетов…", "en": "Refreshing package database…"},
-    "stage_disk": {"ru": "Размечаю диск…", "en": "Partitioning the disk…"},
-    "stage_pkgs": {"ru": "Устанавливаю: %s", "en": "Installing: %s"},
-    "stage_profile": {"ru": "Ставлю окружение: %s", "en": "Installing desktop: %s"},
+    "stage_db": {"ru": "Обновление базы пакетов…", "en": "Refreshing package database…"},
+    "stage_disk": {"ru": "Разметка диска…", "en": "Partitioning the disk…"},
+    "stage_pkgs": {"ru": "Базовая система: %s", "en": "Installing: %s"},
+    "stage_profile": {"ru": "Окружение: %s", "en": "Installing desktop: %s"},
     "stage_pkg": {"ru": "Пакеты: %s из %s", "en": "Packages: %s of %s"},
-    "stage_fstab": {"ru": "Записываю таблицу разделов…", "en": "Writing fstab…"},
-    "stage_sync": {"ru": "Сбрасываю данные на диск…", "en": "Syncing to disk…"},
+    "stage_fstab": {"ru": "Запись fstab…", "en": "Writing fstab…"},
+    "stage_sync": {"ru": "Сброс данных на диск…", "en": "Syncing to disk…"},
 }
 
 
