@@ -278,7 +278,7 @@ def create(disk: str, start: int, end: int, fs: str | None = None,
     if len(new) != 1:
         raise PartOpError(
             "Раздел создан, но опознать его не удалось: в таблице "
-            f"появилось разделов — {len(new)}. Проверь карту вручную.")
+            f"появилось разделов — {len(new)}. Проверьте разделы вручную.")
     number = new.pop()
     item = _by_number(after, number)
     path = item["path"]
