@@ -17,7 +17,35 @@ from desktops import DESKTOP_ENVIRONMENTS, WINDOW_MANAGERS
 from i18n import current_lang, set_lang, tr
 from theme import C
 
-_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+# Bug 68: pacman внутри archinstall сидит в псевдотерминале и рисует
+# прогресс-бары кодами курсора (ESC[5E, ESC[6F, ESC[K, ESC[?25l) и \r.
+# Раньше резались только цвета ESC[...m, остальное летело в окно сырым.
+# Теперь — любые CSI/OSC/двухсимвольные ESC-последовательности.
+_ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]")
+# Конец строки для окна лога. \r — перерисовка строки бара, ESC[nA/B/E/F —
+# переход курсора на другую строку: тоже граница, иначе кадры склеятся с текстом.
+_RE_EOL = re.compile(r"\r\n|\r|\n|\x1b\[\d*[ABEF]")
+# Хвост прогресс-бара pacman: «[####----] 42%» (ILoveCandy рисует C, c и o).
+_RE_BAR = re.compile(r"\s*\[[#\-Cco ]*\]\s*(\d{1,3})%\s*$")
+
+
+def _clean_line(raw: str) -> str | None:
+    """Строка для окна лога или None, если показывать нечего.
+
+    Промежуточные кадры прогресс-бара и строки загрузки (со скоростью)
+    выкидываем; у финального кадра «(n/m) installing foo [###] 100%»
+    срезаем сам бар и оставляем текст.
+    """
+    line = _ANSI.sub("", raw).rstrip()
+    if not line.strip():
+        return None
+    m = _RE_BAR.search(line)
+    if m:
+        if m.group(1) != "100" or "B/s" in line or line.lstrip().startswith("Total"):
+            return None
+        line = line[:m.start()].rstrip()
+    return line or None
+
 
 # --- v9: разбор потока archinstall для индикатора этапа ---
 # Префикс логгера "[2026-07-27 12:00:50] - INFO - ". В stdout обычно не
@@ -672,12 +700,16 @@ class ProgressPage(BasePage):
         self._logfile = None
         self._buf = ""          # хвост неполной строки между чтениями
         self._wbuf = ""         # v10: хвост на случай разрыва «Arch Linux»
+        self._dbuf = ""         # Bug 68: хвост неполной строки для окна лога
+        self._last = None       # Bug 68: последняя показанная строка (без дублей кадров)
         self.retranslate()
 
     def start_install(self, config_path: Path, creds_path: Path) -> None:
         self.status.setText(tr("progress_running"))
         self._buf = ""
         self._wbuf = ""
+        self._dbuf = ""
+        self._last = None
         self.bar.show()
         self.stage.setText(tr("stage_prepare"))
         self.stage.show()
@@ -701,12 +733,27 @@ class ProgressPage(BasePage):
         if self._logfile:
             self._logfile.write(text)
             self._logfile.flush()
-        shown, self._wbuf = _rebrand(text, self._wbuf)
+        self._dbuf += text
+        *lines, self._dbuf = _RE_EOL.split(self._dbuf)
+        self._show(lines)
+        self._scan(text)
+
+    def _show(self, raws: list[str]) -> None:
+        """Bug 68: в окно — только целые строки без ESC-кодов и кадров бара."""
+        out = []
+        for raw in raws:
+            line = _clean_line(raw)
+            if line is None or line == self._last:
+                continue
+            self._last = line
+            out.append(line + "\n")
+        if not out:
+            return
+        shown, self._wbuf = _rebrand("".join(out), self._wbuf)
         self.log.moveCursor(QTextCursor.MoveOperation.End)
         self.log.insertPlainText(shown)
         sb = self.log.verticalScrollBar()
         sb.setValue(sb.maximum())
-        self._scan(text)
 
     def _scan(self, chunk: str) -> None:
         """Вытаскивает из потока archinstall текущий этап. Никогда не кидает
@@ -752,6 +799,9 @@ class ProgressPage(BasePage):
         if self._logfile:
             self._logfile.close()
             self._logfile = None
+        if self._dbuf:                     # Bug 68: последняя строка без перевода
+            self._show([self._dbuf])
+            self._dbuf = ""
         if self._wbuf:                     # v10: досылаем отложенный хвост
             self.log.moveCursor(QTextCursor.MoveOperation.End)
             self.log.insertPlainText(self._wbuf)
