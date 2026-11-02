@@ -317,6 +317,25 @@ STRINGS = {
     "err_no_disk": {"ru": "Выберите диск для установки.", "en": "Select a disk to install to."},
     "err_user": {"ru": "Заполните имя пользователя и пароль.", "en": "Fill in username and password."},
     "err_pass": {"ru": "Пароли не совпадают.", "en": "Passwords do not match."},
+    # --- Патч 70: имя пользователя и компьютера ---
+    "err_user_fmt": {
+        "ru": "Имя пользователя: только строчные латинские буквы, цифры, «_» и «-».\n"
+              "Начинается с буквы или «_», длина до 32 символов.",
+        "en": "Username: lowercase Latin letters, digits, “_” and “-” only.\n"
+              "Starts with a letter or “_”, up to 32 characters.",
+    },
+    "err_user_taken": {
+        "ru": "Имя «%s» уже занято системой (служебный пользователь или группа).\n"
+              "Выберите другое.",
+        "en": "The name “%s” is already used by the system (a service user or group).\n"
+              "Choose another one.",
+    },
+    "err_host": {
+        "ru": "Имя компьютера: латинские буквы, цифры и «-», до 63 символов,\n"
+              "без «-» в начале и в конце.",
+        "en": "Hostname: Latin letters, digits and “-”, up to 63 characters,\n"
+              "not starting or ending with “-”.",
+    },
     "err_no_root": {
         "ru": "Назначьте раздел под корень «/» — без него ставить некуда.",
         "en": "Assign a partition to root “/” — there is nowhere to install otherwise.",

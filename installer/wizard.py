@@ -248,6 +248,43 @@ class InstallerWindow(QMainWindow):
                 return tr("err_luks_pass")
         return None
 
+    # Патч 70 (Bug 70): useradd падает с кодом 9, если имя занято системной
+    # группой или пользователем (adm, wheel, root…), — уже после pacstrap.
+    # Пакетные юзеры окружений: в live их может не быть, в target будут.
+    PKG_USERS = {
+        "avahi", "colord", "cosmic-greeter", "cups", "dnsmasq", "flatpak",
+        "gdm", "geoclue", "git", "greeter", "lightdm", "nm-openconnect",
+        "nm-openvpn", "nvidia-persistenced", "polkitd", "rtkit", "saned",
+        "sddm", "tss", "usbmux",
+    }
+
+    def _validate_user(self) -> str | None:
+        """Гейт страницы «Пользователь»: имя, пароли, имя компьютера."""
+        import grp
+        import pwd
+        import re
+
+        s = self.state
+        name = s.get("username") or ""
+        if not name or not s.get("password"):
+            return tr("err_user")
+        # консервативно, как NAME_REGEX в Debian: заглавные и точки useradd
+        # пропустит, но на них спотыкаются другие утилиты
+        if not re.fullmatch(r"[a-z_][a-z0-9_-]{0,31}", name):
+            return tr("err_user_fmt")
+        taken = (self.PKG_USERS
+                 | {p.pw_name for p in pwd.getpwall()}
+                 | {g.gr_name for g in grp.getgrall()})
+        if name in taken:
+            return tr("err_user_taken") % name
+        if s.get("password") != s.get("password2"):
+            return tr("err_pass")
+        # метка RFC 1123: до 63 символов, без «-» по краям
+        if not re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?",
+                            s.get("hostname") or ""):
+            return tr("err_host")
+        return None
+
     def _validate(self) -> str | None:
         s = self.state
         if not s.get("disk"):
@@ -255,11 +292,7 @@ class InstallerWindow(QMainWindow):
         err = self._validate_part()
         if err:
             return err
-        if not s.get("username") or not s.get("password"):
-            return tr("err_user")
-        if s.get("password") != s.get("password2"):
-            return tr("err_pass")
-        return None
+        return self._validate_user()
 
     def _start_install(self) -> None:
         err = self._validate()
@@ -293,6 +326,9 @@ class InstallerWindow(QMainWindow):
                 overlay.say(self, "Ouvert Linux", err)
                 return
             if isinstance(page, PartitioningPage) and (err := self._validate_part()):
+                overlay.say(self, "Ouvert Linux", err)
+                return
+            if isinstance(page, UserPage) and (err := self._validate_user()):
                 overlay.say(self, "Ouvert Linux", err)
                 return
             if i == self.summary_index:
