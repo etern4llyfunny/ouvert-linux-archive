@@ -810,7 +810,8 @@ class ProgressPage(BasePage):
         self.bar.hide()
         self.stage.hide()
         self.status.setText(tr("progress_done") if ok else tr("progress_fail"))
-        self.reboot_btn.setVisible(ok)
+        # Патч 72 (Bug 34в): и при ошибке — иначе из киоска не выйти
+        self.reboot_btn.show()
 
     def retranslate(self) -> None:
         self.title.setText(tr("progress_title"))

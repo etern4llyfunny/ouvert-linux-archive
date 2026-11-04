@@ -408,8 +408,25 @@ STRINGS = {
     "progress_title": {"ru": "Установка", "en": "Installing"},
     "progress_running": {"ru": "Идёт установка. Обычно занимает 10–30 минут — не выключайте компьютер.", "en": "Installing. Usually takes 10–30 minutes — do not power off."},
     "progress_done": {"ru": "Готово! Установка завершена.", "en": "Done! Installation complete."},
-    "progress_fail": {"ru": "Установка завершилась с ошибкой. Лог ниже и в /tmp/ouvert/install.log", "en": "Installation failed. Log below and in /tmp/ouvert/install.log"},
+    "progress_fail": {
+        "ru": "Установка не удалась. Частая причина — пропал интернет.\n"
+              "Перезагрузите компьютер и запустите установку заново. "
+              "Лог: /tmp/ouvert/install.log",
+        "en": "Installation failed. A common cause is a lost internet connection.\n"
+              "Reboot and start the installation again. Log: /tmp/ouvert/install.log",
+    },
     "reboot": {"ru": "Перезагрузить", "en": "Reboot"},
+    # --- Патч 72 (Bug 34): логотип — кнопка питания ---
+    "power_tip": {"ru": "Питание: перезагрузить или выключить",
+                  "en": "Power: reboot or shut down"},
+    "power_off": {"ru": "Выключить", "en": "Shut down"},
+    "power_busy": {
+        "ru": "Идёт установка. Если прервать её сейчас, диск останется\n"
+              "наполовину размеченным, и установку придётся начать заново.",
+        "en": "Installation is running. Interrupting it now leaves the disk\n"
+              "half-partitioned, and the installation will have to start over.",
+    },
+    "power_anyway": {"ru": "Всё равно прервать", "en": "Interrupt anyway"},
 
     # --- v9: индикатор этапа установки ---
     "stage_prepare": {"ru": "Подготовка…", "en": "Preparing…"},

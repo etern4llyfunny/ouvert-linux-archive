@@ -6,10 +6,10 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QProcess, QRect, QSize, Qt
-from PySide6.QtGui import QGuiApplication, QPixmap
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton,
-    QStackedWidget, QVBoxLayout, QWidget,
+    QFrame, QHBoxLayout, QLabel, QMainWindow, QMenu, QMessageBox, QPushButton,
+    QStackedWidget, QToolButton, QVBoxLayout, QWidget,
 )
 
 import overlay
@@ -74,16 +74,27 @@ class InstallerWindow(QMainWindow):
         h = QHBoxLayout(header)
         h.setContentsMargins(20, 8, 20, 8)
 
-        logo = QLabel()
+        # Патч 72 (Bug 34): логотип — кнопка питания. В киоске cage это
+        # единственный выход: Alt+F4 мёртв, панели нет (замер 04.11, t41).
+        logo = QToolButton()
+        logo.setCursor(Qt.CursorShape.PointingHandCursor)
+        logo.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        logo.setStyleSheet(
+            "QToolButton { border: none; padding: 0; border-radius: 24px; }"
+            "QToolButton:hover { background: rgba(255, 255, 255, 0.08); }"
+            "QToolButton::menu-indicator { image: none; width: 0; }"
+        )
         logo_path = ASSETS / "logo.png"
         if logo_path.exists():
-            logo.setPixmap(
-                QPixmap(str(logo_path)).scaled(
-                    44, 44,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                )
-            )
+            logo.setIcon(QIcon(str(logo_path)))
+            logo.setIconSize(QSize(44, 44))
+        menu = QMenu(logo)
+        self.act_reboot = menu.addAction("")
+        self.act_reboot.triggered.connect(lambda: self._power("reboot"))
+        self.act_off = menu.addAction("")
+        self.act_off.triggered.connect(lambda: self._power("poweroff"))
+        logo.setMenu(menu)
+        self.logo = logo
         self.header_title = QLabel()
         self.header_title.setStyleSheet("font-size: 18px; font-weight: 700;")
         self.step_label = QLabel()
@@ -350,9 +361,30 @@ class InstallerWindow(QMainWindow):
     def retranslate_all(self) -> None:
         self.setWindowTitle(tr("app_title"))
         self.header_title.setText(tr("app_title"))
+        self.logo.setToolTip(tr("power_tip"))
+        self.act_reboot.setText(tr("reboot"))
+        self.act_off.setText(tr("power_off"))
         for p in self.pages:
             p.retranslate()
         self.update_nav()
+
+    def _power(self, cmd: str) -> None:
+        """Патч 72. Перезагрузка/выключение из меню логотипа. Во время
+        установки — только после подтверждения: зависший archinstall не
+        должен запирать человека, но и оборвать его случайно нельзя."""
+        proc = self.progress.proc
+        if proc is not None and proc.state() != QProcess.ProcessState.NotRunning:
+            box = QMessageBox(QMessageBox.Icon.Warning, "Ouvert Linux",
+                              tr("power_busy"), parent=self)
+            box.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+            yes = box.addButton(tr("power_anyway"), QMessageBox.ButtonRole.AcceptRole)
+            box.setDefaultButton(
+                box.addButton(tr("pe_cancel"), QMessageBox.ButtonRole.RejectRole)
+            )
+            overlay.run(box)
+            if box.clickedButton() is not yes:
+                return
+        QProcess.startDetached("systemctl", [cmd])
 
     def closeEvent(self, event) -> None:
         """Патч 62. Кнопок у окна нет, но Alt+F4 и «Закрыть» из панели
