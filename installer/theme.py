@@ -78,6 +78,13 @@ QProgressBar::chunk {{ background: {C["blue"]}; border-radius: 5px; }}
 QRadioButton {{ padding: 4px 2px; background: transparent; }}
 QScrollArea {{ border: none; }}
 
+/* Патч 73: меню логотипа — свой фон и рамка, иначе правило QWidget выше
+   красит его цветом страницы и пункты висят прямо поверх текста */
+QMenu {{ background: {C["panel"]}; border: 1px solid {C["line"]}; padding: 6px; }}
+QMenu::item {{ background: transparent; padding: 8px 28px 8px 14px; border-radius: 6px; }}
+QMenu::item:selected {{ background: rgba(46, 159, 240, 0.18); color: {C["fg"]}; }}
+QMenu::separator {{ height: 1px; background: {C["line"]}; margin: 4px 8px; }}
+
 /* Патч 63: панель установщика и диалоги внутри окна (overlay.py) */
 QWidget#panel {{ border: 1px solid {C["line"]}; }}
 QWidget#scrim {{ background: rgba(0, 0, 0, 150); }}

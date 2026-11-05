@@ -6,10 +6,10 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QProcess, QRect, QSize, Qt
-from PySide6.QtGui import QGuiApplication, QIcon
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QMainWindow, QMenu, QMessageBox, QPushButton,
-    QStackedWidget, QToolButton, QVBoxLayout, QWidget,
+    QStackedWidget, QVBoxLayout, QWidget,
 )
 
 import overlay
@@ -20,6 +20,7 @@ from pages import (
     SummaryPage, UserPage, WelcomePage,
 )
 from partitioning import PartitioningPage
+from power import PowerLogo, Screensaver
 from system import AdvancedPage, RegionPage
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -74,26 +75,18 @@ class InstallerWindow(QMainWindow):
         h = QHBoxLayout(header)
         h.setContentsMargins(20, 8, 20, 8)
 
-        # Патч 72 (Bug 34): логотип — кнопка питания. В киоске cage это
-        # единственный выход: Alt+F4 мёртв, панели нет (замер 04.11, t41).
-        logo = QToolButton()
-        logo.setCursor(Qt.CursorShape.PointingHandCursor)
-        logo.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        logo.setStyleSheet(
-            "QToolButton { border: none; padding: 0; border-radius: 24px; }"
-            "QToolButton:hover { background: rgba(255, 255, 255, 0.08); }"
-            "QToolButton::menu-indicator { image: none; width: 0; }"
-        )
-        logo_path = ASSETS / "logo.png"
-        if logo_path.exists():
-            logo.setIcon(QIcon(str(logo_path)))
-            logo.setIconSize(QSize(44, 44))
-        menu = QMenu(logo)
+        # Патч 72 (Bug 34): логотип — кнопка питания, единственный выход из
+        # киоска cage (Alt+F4 мёртв, панели нет). Патч 73: рисуется вектором
+        # и по клику превращается в ⏻ (power.py); в меню есть заставка.
+        menu = QMenu(self)
+        self.act_saver = menu.addAction("")
+        self.act_saver.triggered.connect(lambda: self.saver.start(self.state.get("timezone")))
+        menu.addSeparator()
         self.act_reboot = menu.addAction("")
         self.act_reboot.triggered.connect(lambda: self._power("reboot"))
         self.act_off = menu.addAction("")
         self.act_off.triggered.connect(lambda: self._power("poweroff"))
-        logo.setMenu(menu)
+        logo = PowerLogo(menu)
         self.logo = logo
         self.header_title = QLabel()
         self.header_title.setStyleSheet("font-size: 18px; font-weight: 700;")
@@ -160,6 +153,12 @@ class InstallerWindow(QMainWindow):
         self.setCentralWidget(outer)
         self.area = QRect()      # прямоугольник выбранного экрана, для overlay
         overlay.HOST = self      # диалоги — внутрь окна (overlay.py)
+        # Патч 73: заставка — поверх всего окна (под cage оно на всех мониторах)
+        self.saver = Screensaver(outer)
+        # Патч 73.4: логотип — последним в порядке Tab, чтобы начальный фокус
+        # (и Enter на первой странице) не открывал меню питания. Только здесь:
+        # раньше кнопки и логотип ещё не в одном окне, и Qt вызов игнорирует.
+        QWidget.setTabOrder(self.btn_next, self.logo)
 
         self.retranslate_all()
 
@@ -362,6 +361,7 @@ class InstallerWindow(QMainWindow):
         self.setWindowTitle(tr("app_title"))
         self.header_title.setText(tr("app_title"))
         self.logo.setToolTip(tr("power_tip"))
+        self.act_saver.setText(tr("saver"))
         self.act_reboot.setText(tr("reboot"))
         self.act_off.setText(tr("power_off"))
         for p in self.pages:

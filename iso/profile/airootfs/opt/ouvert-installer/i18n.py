@@ -427,6 +427,8 @@ STRINGS = {
               "half-partitioned, and the installation will have to start over.",
     },
     "power_anyway": {"ru": "Всё равно прервать", "en": "Interrupt anyway"},
+    # --- Патч 73: заставка из меню логотипа ---
+    "saver": {"ru": "Заставка", "en": "Screensaver"},
 
     # --- v9: индикатор этапа установки ---
     "stage_prepare": {"ru": "Подготовка…", "en": "Preparing…"},
