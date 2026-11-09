@@ -89,6 +89,14 @@ QRadioButton::indicator {{ width: 12px; height: 12px; border: 2px solid {C["mute
 QRadioButton::indicator:hover {{ border-color: {C["blue_hi"]}; }}
 QRadioButton::indicator:checked {{ border-color: {C["blue"]}; background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 {C["blue"]}, stop:0.5 {C["blue"]}, stop:0.6 transparent); }}
 QRadioButton::indicator:disabled {{ border-color: {C["line"]}; }}
+/* Патч 74 (Bug 76): свой квадрат у галок — штатный рисовался цветом фона.
+   Выбранная — сплошная голубая заливка, без svg: в live его может не быть */
+QCheckBox {{ background: transparent; }}
+QCheckBox::indicator {{ width: 12px; height: 12px; border: 2px solid {C["muted"]}; border-radius: 4px; background: transparent; }}
+QCheckBox::indicator:hover {{ border-color: {C["blue_hi"]}; }}
+QCheckBox::indicator:checked {{ border-color: {C["blue"]}; background: {C["blue"]}; }}
+QCheckBox::indicator:disabled {{ border-color: {C["line"]}; }}
+QCheckBox::indicator:checked:disabled {{ background: {C["line"]}; }}
 QScrollArea {{ border: none; }}
 /* Патч 71: тонкий скроллбар без кнопок-стрелок */
 QScrollBar {{ background: transparent; border: none; margin: 0; }}

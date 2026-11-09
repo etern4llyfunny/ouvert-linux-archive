@@ -265,6 +265,16 @@ def build_custom_commands(state: dict) -> list[str]:
             f"printf 'XKB_DEFAULT_LAYOUT={layout}\\nXKB_DEFAULT_OPTIONS={opts}\\n' >> /etc/environment\n"
         )
 
+    # Патч 74 (Bug 75): en_US.UTF-8 — всегда, при любом языке. archinstall 4.4
+    # генерирует ровно одну локаль (sys_lang), а Steam и часть игр без
+    # en_US.UTF-8 падают (Arch Wiki, Steam). Без set -e: кривая локаль не
+    # должна валить установку. grep -x: строка добавится один раз.
+    cmds.append(
+        "grep -qxF 'en_US.UTF-8 UTF-8' /etc/locale.gen"
+        " || echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen\n"
+        "locale-gen || true\n"
+    )
+
     # Чистка секции [ouvert] из pacman.conf ЦЕЛИ. Блоков там ДВА
     # (см. комментарий у CUSTOM_REPOS). Каждый — ровно 3 строки:
     #   [ouvert] / SigLevel = ... / Server = ...
