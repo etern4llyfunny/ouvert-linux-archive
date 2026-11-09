@@ -313,9 +313,13 @@ class InstallerWindow(QMainWindow):
         if not LIVE_MARKER.exists():
             overlay.say(self, "Ouvert Linux", tr("not_live"), QMessageBox.Icon.Information)
             return
+        # Патч 71 (Bug 73): сначала страница прогресса и фокус в окно лога,
+        # потом прятать кнопки. Спрятанная кнопка с фокусом отдаёт его
+        # следующему по Tab — логотипу, и вокруг него рисовалось кольцо.
+        self.stack.setCurrentIndex(self.progress_index)
+        self.progress.log.setFocus(Qt.FocusReason.OtherFocusReason)
         self.btn_back.hide()
         self.btn_next.hide()
-        self.stack.setCurrentIndex(self.progress_index)
         self.update_nav()
         self.progress.start_install(cfg, creds)
 

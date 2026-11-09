@@ -4,7 +4,9 @@ cd "$(dirname "$0")"
 
 # 1. Инсталлер
 mkdir -p profile/airootfs/opt
-rsync -a --delete --exclude __pycache__ --exclude '*.py.*' --exclude tests --exclude 'test_*.py' --exclude 'patch_*.py' --exclude stand_gui.py ../installer/ profile/airootfs/opt/ouvert-installer/
+# Патч 71: без --delete-excluded исключённое (патчеры, тесты), раз попав
+# в копию, оттуда уже не вычищается — --delete его не трогает
+rsync -a --delete --delete-excluded --exclude __pycache__ --exclude '*.py.*' --exclude tests --exclude 'test_*.py' --exclude 'patch_*.py' --exclude stand_gui.py ../installer/ profile/airootfs/opt/ouvert-installer/
 
 # 2. Репозиторий ouvert.
 # В живой системе он окажется как /opt/ouvert-repo/x86_64 — ровно этот путь

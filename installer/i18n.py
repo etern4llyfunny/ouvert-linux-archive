@@ -111,6 +111,7 @@ STRINGS = {
     "part_will_keep": {"ru": "сохранить", "en": "keep"},
     "part_label": {"ru": "Разметка", "en": "Partitioning"},
     "part_count": {"ru": "разд.", "en": "part."},
+    "part_subvols_short": {"ru": "сабволюмы", "en": "subvolumes"},
 
     # --- этап 5: редактор разделов ---
     "part_edit_btn": {"ru": "Изменить разделы…", "en": "Edit partitions…"},
@@ -140,7 +141,7 @@ STRINGS = {
     "pe_soon": {"ru": "Появится в следующей версии", "en": "Coming in the next version"},
     "pe_select": {
         "ru": "Выберите строку — снизу появится, можно ли её удалить.",
-        "en": "Select a row — I will tell you whether it can be deleted.",
+        "en": "Select a row — the line below shows whether it can be deleted.",
     },
     "pe_can_delete": {"ru": "Этот раздел удалить можно.", "en": "This partition can be deleted."},
     "pe_cant_delete": {"ru": "Удалять нельзя: %s", "en": "Cannot delete: %s"},
@@ -280,9 +281,18 @@ STRINGS = {
 
     "gfx_title": {"ru": "Видеодрайвер", "en": "Graphics driver"},
     "gfx_hint": {
-        "ru": "Не уверены — оставьте «All open-source».\nNvidia GTX 16xx / RTX — выберите «open kernel module».\nДля виртуальной машины подойдёт «All open-source» или «VirtualBox».",
+        "ru": "Не уверены — оставьте «Все открытые драйверы».\nNvidia GTX 16xx / RTX — выберите «открытый модуль ядра».\nДля виртуальной машины подойдут «Все открытые драйверы» или «VirtualBox».",
         "en": "Not sure — keep “All open-source”.\nNvidia GTX 16xx / RTX — pick “open kernel module”.\nIn a VM, “All open-source” or “VirtualBox” both work.",
     },
+
+    # --- Патч 71: названия видеодрайверов. Ключ — значение для archinstall
+    # (оно и лежит в state["gfx"]), перевод — только для экрана; en = ключ ---
+    "All open-source": {"ru": "Все открытые драйверы"},
+    "AMD / ATI (open-source)": {"ru": "AMD / ATI (открытый)"},
+    "Intel (open-source)": {"ru": "Intel (открытый)"},
+    "Nvidia (open kernel module for newer GPUs, Turing+)": {"ru": "Nvidia (открытый модуль ядра, Turing и новее)"},
+    "Nvidia (open-source nouveau driver)": {"ru": "Nvidia (открытый nouveau)"},
+    "VirtualBox (open-source)": {"ru": "VirtualBox (открытый)"},
 
     "repo_title": {"ru": "Дополнительные репозитории", "en": "Additional repositories"},
     "adv_title": {"ru": "Ядро и репозитории", "en": "Kernel & repositories"},
@@ -331,9 +341,9 @@ STRINGS = {
               "Choose another one.",
     },
     "err_host": {
-        "ru": "Имя компьютера: латинские буквы, цифры и «-», до 63 символов,\n"
+        "ru": "Имя компьютера: латинские буквы, цифры и «-», до 63 символов, "
               "без «-» в начале и в конце.",
-        "en": "Hostname: Latin letters, digits and “-”, up to 63 characters,\n"
+        "en": "Hostname: Latin letters, digits and “-”, up to 63 characters, "
               "not starting or ending with “-”.",
     },
     "err_no_root": {

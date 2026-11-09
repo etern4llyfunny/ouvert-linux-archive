@@ -466,7 +466,7 @@ class PartitioningPage(BasePage):
             return f'{tr("part_mode_manual")} — {n} {tr("part_count")}'
         parts = [tr("part_mode_wipe"), s.get("fs", "ext4")]
         if use_subvols(s):
-            parts.append("subvols")
+            parts.append(tr("part_subvols_short"))  # Патч 71
         if use_separate_home(s):
             parts.append(f'/home, / {s["root_size_gib"]} GiB')
         if s.get("luks"):

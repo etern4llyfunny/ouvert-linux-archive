@@ -570,18 +570,23 @@ class GfxPage(BasePage):
         self.body.addSpacing(8)
 
         self.group = QButtonGroup(self)
+        # Патч 71: в state и archinstall — английское значение, на экране — перевод
+        self.rbs = []
         for drv in GFX_DRIVERS:
-            rb = QRadioButton(drv)
+            rb = QRadioButton()
             rb.toggled.connect(lambda on, d=drv: on and self.state.update(gfx=d))
             if drv == self.state.get("gfx"):
                 rb.setChecked(True)
             self.group.addButton(rb)
             self.body.addWidget(rb)
+            self.rbs.append((rb, drv))
         self.retranslate()
 
     def retranslate(self) -> None:
         self.title.setText(tr("gfx_title"))
         self.hint.setText(tr("gfx_hint"))
+        for rb, drv in self.rbs:
+            rb.setText(tr(drv))
 
 
 class ReposPage(BasePage):
@@ -642,7 +647,7 @@ class SummaryPage(BasePage):
             (tr("hostname"), s.get("hostname") or ns),
             (tr("tz_label"), s.get("timezone") or ns),
             (tr("desktop_label"), s.get("profile_name") or ns),
-            (tr("gfx_label"), s.get("gfx") or ns),
+            (tr("gfx_label"), tr(s["gfx"]) if s.get("gfx") else ns),  # Патч 71
             (tr("repos_label"), ", ".join(s.get("repos") or []) or "—"),
             (tr("disk_label"), s.get("disk_desc") or ns),
             (tr("part_label"), s.get("part_desc") or ns),

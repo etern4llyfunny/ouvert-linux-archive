@@ -4,7 +4,8 @@
 Коралловый — только опасное и ошибки, чтобы «Стереть диск» не выглядело
 так же, как «Далее».
 """
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtWidgets import QApplication, QPushButton
 
 C = {
     "bg": "#14191F",
@@ -40,13 +41,19 @@ QPushButton {{
 QPushButton:hover {{ border-color: {C["coral"]}; color: {C["coral"]}; }}
 QPushButton:disabled {{ color: {C["muted"]}; border-color: {C["line"]}; }}
 
-QPushButton#primary {{ background: {C["blue"]}; color: {C["ink"]}; font-weight: 600; border: none; }}
+QPushButton#primary {{ background: {C["blue"]}; color: {C["ink"]}; font-weight: 600; border: 2px solid transparent; }}
 QPushButton#primary:hover {{ background: {C["coral"]}; color: {C["ink"]}; }}
 QPushButton#primary:disabled {{ background: {C["line"]}; color: {C["muted"]}; }}
 
 /* необратимое: разметка, форматирование, стирание диска */
-QPushButton#danger {{ background: {C["coral"]}; color: {C["ink"]}; font-weight: 600; border: none; }}
+QPushButton#danger {{ background: {C["coral"]}; color: {C["ink"]}; font-weight: 600; border: 2px solid transparent; }}
 QPushButton#danger:hover {{ background: #E04B3A; }}
+
+/* Патч 71 (Bug 72): рамка фокуса — только с клавиатуры, как у логотипа (73.1).
+   Свойство kbfocus ставит фильтр из apply_theme(); пунктир Qt не рисуем. */
+QPushButton {{ outline: none; }}
+QPushButton[kbfocus="true"] {{ border-color: {C["blue"]}; }}
+QPushButton#primary[kbfocus="true"], QPushButton#danger[kbfocus="true"] {{ border-color: {C["fg"]}; }}
 
 QLineEdit, QComboBox {{
     background: {C["panel"]};
@@ -76,7 +83,23 @@ QProgressBar {{ background: {C["panel"]}; border: 1px solid {C["line"]}; border-
 QProgressBar::chunk {{ background: {C["blue"]}; border-radius: 5px; }}
 
 QRadioButton {{ padding: 4px 2px; background: transparent; }}
+/* Патч 71: свой кружок — штатный рисовался цветом фона, и невыбранные
+   пункты было не отличить от простого текста */
+QRadioButton::indicator {{ width: 12px; height: 12px; border: 2px solid {C["muted"]}; border-radius: 8px; background: transparent; }}
+QRadioButton::indicator:hover {{ border-color: {C["blue_hi"]}; }}
+QRadioButton::indicator:checked {{ border-color: {C["blue"]}; background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 {C["blue"]}, stop:0.5 {C["blue"]}, stop:0.6 transparent); }}
+QRadioButton::indicator:disabled {{ border-color: {C["line"]}; }}
 QScrollArea {{ border: none; }}
+/* Патч 71: тонкий скроллбар без кнопок-стрелок */
+QScrollBar {{ background: transparent; border: none; margin: 0; }}
+QScrollBar:vertical {{ width: 10px; }}
+QScrollBar:horizontal {{ height: 10px; }}
+QScrollBar::handle {{ background: rgba(147, 162, 177, 0.35); border-radius: 4px; margin: 1px; }}
+QScrollBar::handle:hover {{ background: {C["muted"]}; }}
+QScrollBar::handle:vertical {{ min-height: 28px; }}
+QScrollBar::handle:horizontal {{ min-width: 28px; }}
+QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; border: none; background: none; }}
+QScrollBar::add-page, QScrollBar::sub-page {{ background: none; }}
 
 /* Патч 73: меню логотипа — свой фон и рамка, иначе правило QWidget выше
    красит его цветом страницы и пункты висят прямо поверх текста */
@@ -92,5 +115,28 @@ QWidget#scrim > QDialog {{ border: 1px solid {C["line"]}; border-radius: 8px; }}
 """
 
 
+class _KbFocus(QObject):
+    """Патч 71 (Bug 72): свойство kbfocus у кнопки — только когда фокус
+    пришёл с клавиатуры (Tab/Shift+Tab); клик мышью его гасит. С голым
+    :focus рамка висела бы на «Далее» после каждого клика."""
+
+    _WATCH = (QEvent.Type.FocusIn, QEvent.Type.FocusOut, QEvent.Type.MouseButtonPress)
+
+    def eventFilter(self, obj, ev) -> bool:
+        t = ev.type()
+        if t in self._WATCH and isinstance(obj, QPushButton):
+            kb = t == QEvent.Type.FocusIn and ev.reason() in (
+                Qt.FocusReason.TabFocusReason, Qt.FocusReason.BacktabFocusReason)
+            if bool(obj.property("kbfocus")) != kb:
+                obj.setProperty("kbfocus", kb)
+                obj.style().unpolish(obj)
+                obj.style().polish(obj)
+        return False
+
+
+_KB = _KbFocus()
+
+
 def apply_theme(app: QApplication) -> None:
     app.setStyleSheet(QSS)
+    app.installEventFilter(_KB)
