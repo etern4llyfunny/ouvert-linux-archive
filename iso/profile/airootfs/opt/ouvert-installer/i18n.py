@@ -437,6 +437,17 @@ STRINGS = {
               "half-partitioned, and the installation will have to start over.",
     },
     "power_anyway": {"ru": "Всё равно прервать", "en": "Interrupt anyway"},
+    # --- Патч 78 (Bug 78): последний вопрос перед стиранием ---
+    "wipe_confirm": {
+        "ru": "Всё содержимое диска %s будет стёрто без возможности восстановления. Продолжить?",
+        "en": "Everything on %s will be erased and cannot be recovered. Continue?",
+    },
+    "wipe_yes": {"ru": "Стереть и установить", "en": "Erase and install"},
+    "fmt_confirm": {
+        "ru": "Будут отформатированы: %s. Данные на этих разделах пропадут без возможности восстановления. Продолжить?",
+        "en": "These partitions will be formatted: %s. Their data will be lost for good. Continue?",
+    },
+    "fmt_yes": {"ru": "Форматировать и установить", "en": "Format and install"},
     # --- Патч 73: заставка из меню логотипа ---
     "saver": {"ru": "Заставка", "en": "Screensaver"},
 

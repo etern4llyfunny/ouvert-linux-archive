@@ -313,6 +313,8 @@ class InstallerWindow(QMainWindow):
         if not LIVE_MARKER.exists():
             overlay.say(self, "Ouvert Linux", tr("not_live"), QMessageBox.Icon.Information)
             return
+        if not self._confirm_erase():
+            return
         # Патч 71 (Bug 73): сначала страница прогресса и фокус в окно лога,
         # потом прятать кнопки. Спрятанная кнопка с фокусом отдаёт его
         # следующему по Tab — логотипу, и вокруг него рисовалось кольцо.
@@ -322,6 +324,29 @@ class InstallerWindow(QMainWindow):
         self.btn_next.hide()
         self.update_nav()
         self.progress.start_install(cfg, creds)
+
+    def _confirm_erase(self) -> bool:
+        """Патч 78 (Bug 78): последний вопрос перед тем, что нельзя отменить.
+        «Стереть диск» — всегда; «Вручную» — если хоть один раздел форматируется.
+        По умолчанию «Отмена», чтобы Enter или Space диск не стёрли."""
+        s = self.state
+        if s.get("part_mode") == "manual":
+            fmt = [p["path"] for p in s.get("manual_parts") or []
+                   if p.get("mountpoint") and p.get("format")]
+            if not fmt:
+                return True
+            text, yes_text = tr("fmt_confirm") % ", ".join(fmt), tr("fmt_yes")
+        else:
+            text = tr("wipe_confirm") % (s.get("disk_desc") or s.get("disk"))
+            yes_text = tr("wipe_yes")
+        box = QMessageBox(QMessageBox.Icon.Warning, "Ouvert Linux", text, parent=self)
+        box.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+        yes = box.addButton(yes_text, QMessageBox.ButtonRole.AcceptRole)
+        box.setDefaultButton(
+            box.addButton(tr("pe_cancel"), QMessageBox.ButtonRole.RejectRole)
+        )
+        overlay.run(box)
+        return box.clickedButton() is yes
 
     def go(self, delta: int) -> None:
         i = self.stack.currentIndex()

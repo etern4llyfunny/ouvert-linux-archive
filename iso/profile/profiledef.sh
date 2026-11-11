@@ -5,7 +5,7 @@ iso_name="ouvert"
 iso_label="OUVERT_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
 iso_publisher="Ouvert Linux"
 iso_application="Ouvert Linux Live/Install"
-iso_version="beta-20"
+iso_version="beta-21"
 install_dir="arch"
 buildmodes=('iso')
 bootmodes=('bios.syslinux'
