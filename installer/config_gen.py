@@ -29,7 +29,7 @@ from pathlib import Path
 
 from desktops import CUSTOM_SETTINGS
 
-VERSION = "v9"
+VERSION = "v10"
 
 OUT_DIR = Path("/tmp/ouvert")
 CONFIG_PATH = OUT_DIR / "user_configuration.json"
@@ -285,9 +285,22 @@ def build_custom_commands(state: dict) -> list[str]:
     # Бонус: пакеты становятся foreign -> paru видит для них обновления
     # в AUR. Если оставить [ouvert], paru счёл бы их реповыми и не
     # обновлял бы никогда.
+    # Патч 80 (B1/B2): вместо вырезанных блоков — онлайн-репо со СВОИМИ
+    # пакетами (ядро, брендинг, keyring) и обязательной подписью; AUR-
+    # пересборок там нет, они остаются foreign и обновляются через paru.
+    # sync/ouvert.db от pacstrap не подписана -> первый pacman -Sy у юзера
+    # ругался «не найдена необходимая подпись» (замер t53, 11.11.26):
+    # вычищаем и сразу тянем свежую. populate — страховка к скриптлету
+    # ouvert-keyring. Сеть могла пропасть -> || true, как у flatpak ниже.
     cmds.append(
         "set -e\n"
         f"sed -i '/^\\[{REPO_NAME}\\]$/,+2d' /etc/pacman.conf\n"
+        f"printf '\\n[{REPO_NAME}]\\nSigLevel = Required\\nServer = {ONLINE_REPO_URL}\\n'"
+        " >> /etc/pacman.conf\n"
+        f"rm -f /var/lib/pacman/sync/{REPO_NAME}.db /var/lib/pacman/sync/{REPO_NAME}.db.sig"
+        f" /var/lib/pacman/sync/{REPO_NAME}.files /var/lib/pacman/sync/{REPO_NAME}.files.sig\n"
+        f"pacman-key --populate {REPO_NAME} || true\n"
+        "pacman -Sy || true\n"
     )
 
     # Flathub. Без || true падение (нет сети) уронило бы всю установку:
@@ -762,8 +775,10 @@ def build_disk_config(state: dict) -> dict:
 REPO_NAME = "ouvert"
 REPO_DIR = "/opt/ouvert-repo/x86_64"
 REPO_URL = f"file://{REPO_DIR}"
+# Патч 80: репо УСТАНОВЛЕННОЙ системы (GitHub Releases, ключ 42F05EB5…0F983E9A).
+ONLINE_REPO_URL = "https://github.com/etern4llyfunny/ouvert-repo/releases/download/x86_64"
 
-# Пакеты не подписаны -> SigLevel = Never TrustAll.
+# В live пакеты не подписаны -> SigLevel = Never TrustAll.
 # Значения строгие, это энумы SignCheck/SignOption (lib/models/mirrors.py).
 CUSTOM_REPOS = [
     {
@@ -781,6 +796,7 @@ PACKAGES = [
     "protonup-qt",
     "paru",
     "ouvert-branding",  # этап 3: обои, лого, конфиг fastfetch
+    "ouvert-keyring",  # Патч 80: ключ подписи онлайн-репо [ouvert]
     "os-prober",  # bug 25: обнаружение второй ОС (Windows) для меню GRUB
     # официальные репозитории
     "kitty",
