@@ -20,3 +20,4 @@ pkgbuilds/*/*.log
 stand/*.img
 repo/x86_64/*.old
 repo/x86_64/*.pkg.tar.zst*
+*.pkg.tar.zst.sig
